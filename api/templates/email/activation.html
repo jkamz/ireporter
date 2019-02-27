@@ -1,0 +1,14 @@
+{% extends "email/base/action.html" %}
+{% load i18n %}
+
+{% block subject_text %}{% blocktrans %}Verify your email address for {{ site_name }} account{% endblocktrans %}{% endblock %}
+
+{% block action_title %}{% trans "Please confirm your email address by clicking the link below." %}{% endblock %}
+
+{% block action_explanation %}{% trans "We may send you critical information regarding our services and your account with us. So we need to confirm the email address before we activate your account." %}{% endblock %}
+
+{% block action_link %}{{ protocol }}://{{ domain }}/{{ url }}{% endblock %}
+
+{% block action_button_text %}{% trans "Confirm Email Address" %}{% endblock %}
+
+{% block action_ending_text %}{% trans "Thanks for creating an account with us." %}{% endblock %}

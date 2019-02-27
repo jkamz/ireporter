@@ -1,0 +1,14 @@
+{% extends "email/base/action.html" %}
+{% load i18n %}
+
+{% block subject_text %}{% blocktrans %}Your {{ site_name }} account has been successfully activated{% endblocktrans %}{% endblock %}
+
+{% block action_title %}{% trans "Your account has been created and is ready to use." %}{% endblock %}
+
+{% block action_explanation %}{% trans "You may now login with your account credentials." %}{% endblock %}
+
+{% block action_link %}{{ protocol }}://{{ domain }}/{{ url }}{% endblock %}
+
+{% block action_button_text %}{% blocktrans %}Login to {{ site_name }}{% endblocktrans %}{% endblock %}
+
+{% block action_ending_text %}{% trans "Thanks for activating your account." %}{% endblock %}
