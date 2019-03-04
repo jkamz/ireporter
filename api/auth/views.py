@@ -21,6 +21,10 @@ User = get_user_model()
 
 
 class AuthApiListView(views.APIView):
+    """
+    get:
+    List of Authentication APIs.
+    """
     permission_classes = [permissions.AllowAny]
 
     @staticmethod
@@ -48,6 +52,10 @@ class AuthApiListView(views.APIView):
 
 
 class SignUpView(generics.CreateAPIView):
+    """
+    post:
+    Signup a user.
+    """
     serializer_class = serializers.SignUpSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -63,6 +71,10 @@ class SignUpView(generics.CreateAPIView):
 
 
 class ResendActivationView(utils.ActionViewMixin, generics.GenericAPIView):
+    """
+    post:
+    Resending activation email.
+    """
     serializer_class = serializers.EmailAccountSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -91,6 +103,10 @@ class ResendActivationView(utils.ActionViewMixin, generics.GenericAPIView):
 
 
 class ActivationView(utils.ActionViewMixin, generics.GenericAPIView):
+    """
+    post:
+    Sending activation email.
+    """
     serializer_class = serializers.UidAndTokenSerializer
     permission_classes = [permissions.AllowAny]
     token_generator = default_token_generator
@@ -112,6 +128,10 @@ class ActivationView(utils.ActionViewMixin, generics.GenericAPIView):
 
 
 class LoginView(utils.ActionViewMixin, generics.GenericAPIView):
+    """
+    post:
+    Login a user.
+    """
     serializer_class = serializers.LoginSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -122,6 +142,10 @@ class LoginView(utils.ActionViewMixin, generics.GenericAPIView):
 
 
 class LogoutView(views.APIView):
+    """
+    post:
+    Logout a user.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     @staticmethod
@@ -131,6 +155,10 @@ class LogoutView(views.APIView):
 
 
 class ChangeEmailView(utils.ActionViewMixin, generics.GenericAPIView):
+    """
+    post:
+    Changing a user's email.
+    """
     serializer_class = serializers.ChangeEmailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -152,6 +180,10 @@ class ChangeEmailView(utils.ActionViewMixin, generics.GenericAPIView):
 
 
 class ChangePasswordView(utils.ActionViewMixin, generics.GenericAPIView):
+    """
+    post:
+    Changing a user's password.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
@@ -170,6 +202,10 @@ class ChangePasswordView(utils.ActionViewMixin, generics.GenericAPIView):
 
 
 class PasswordResetView(utils.ActionViewMixin, generics.GenericAPIView):
+    """
+    post:
+    Resetting a user's password.
+    """
     serializer_class = serializers.EmailAccountSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -197,6 +233,10 @@ class PasswordResetView(utils.ActionViewMixin, generics.GenericAPIView):
 
 
 class PasswordResetConfirmView(utils.ActionViewMixin, generics.GenericAPIView):
+    """
+    post:
+    Confirming a user's reset password.
+    """
     permission_classes = [permissions.AllowAny]
     token_generator = default_token_generator
 

@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'django.contrib.postgres',
     'phonenumber_field',
+    'rest_framework_swagger',
 ]
 
 # Rest Framework Settings
@@ -420,3 +421,17 @@ if DJANGO_ENV == 'production':
         SENTRY_DSN
     }
 django_heroku.settings(locals())
+
+# Swagger Settings
+SWAGGER_SETTINGS = {
+   'SHOW_REQUEST_HEADERS': True,
+   'USE_SESSION_AUTH': False,
+   'DOC_EXPANSION': 'list',
+   'SECURITY_DEFINITIONS': {
+       'api_key': {
+           'type': 'apiKey',
+           'in': 'header',
+           'name': 'Authorization'
+       }
+   }
+}
