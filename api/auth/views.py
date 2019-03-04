@@ -138,6 +138,10 @@ class ActivationView(utils.ActionViewMixin, generics.GenericAPIView):
 
 
 class LoginView(generics.GenericAPIView):
+    """
+    post:
+    Login a user.
+    """
     serializer_class = serializers.LoginTokenSerializer
     permission_classes = (permissions.AllowAny,)
     queryset = User.objects.all()
