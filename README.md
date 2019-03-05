@@ -47,7 +47,7 @@
  ```
   /api/schema/
  ```
- 
+
 ## Local Development Setup
  - First Create python virtual env
  ```
@@ -69,8 +69,8 @@
   postgres=# ALTER ROLE django SET client_encoding TO 'utf8';
   postgres=# ALTER ROLE django SET default_transaction_isolation TO 'read committed';
   postgres=# ALTER ROLE django SET timezone TO 'UTC';
-  postgres=# CREATE DATABASE drf;
-  postgres=# GRANT ALL PRIVILEGES ON DATABASE drf TO django;
+  postgres=# CREATE DATABASE ireporter_db;
+  postgres=# GRANT ALL PRIVILEGES ON DATABASE ireporter_db TO django;
   postgres=# \q
   $ exit
  ```
