@@ -127,12 +127,6 @@ class LoginView(utils.ActionViewMixin, generics.GenericAPIView):
         return Response(data=token_serializer_class(token).data)
 
 
-class HelloView(views.APIView):
-    def get(self, request):
-        content = {'message': 'Hello, World!'}
-        return Response(content)
-
-
 class LogoutView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
