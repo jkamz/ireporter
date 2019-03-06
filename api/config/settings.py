@@ -14,6 +14,7 @@ import logging
 import environ
 from django.utils.translation import gettext_lazy as _
 import os
+import datetime
 
 # Project Base Paths
 # project_root/api/config/settings.py - 3 = project_root/
@@ -79,10 +80,9 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES':
-    ('rest_framework.permissions.DjangoModelPermissions', ),
+    ('rest_framework.permissions.IsAuthenticated', ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_THROTTLE_CLASSES': (
         'rest_framework.throttling.AnonRateThrottle',
