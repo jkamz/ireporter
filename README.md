@@ -1,5 +1,7 @@
 # ireporter
 
+[![Build Status](https://travis-ci.org/jkamz/ireporter.svg?branch=develop)](https://travis-ci.org/jkamz/ireporter)
+
 ## Initial Auth Endpoints
  - User Signup
  ```

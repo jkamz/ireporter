@@ -1,0 +1,30 @@
+language: python
+
+python:
+  - 3.6
+
+addons:
+  postgresql: "9.4"
+
+services: postgresql
+
+env:
+  - DJANGO=2.1.7
+
+before_install:
+  - export DJANGO_SETTINGS_MODULE=config.settings
+  - export PYTHONPATH=$HOME/builds/jkamz/ireporter
+  - export DEFAULT_FROM_EMAIL='mail <no-reply@site.me>'
+  - export DEFAULT_SERVER_EMAIL='mail <no-reply@site.me>'
+
+install:
+  - pip install -r api/requirements.txt
+
+before_script:
+  - psql -c "CREATE DATABASE drf;" -U postgres
+
+script:
+  - python api/manage.py makemigrations
+  - python api/manage.py migrate
+  - python api/manage.py test
+
