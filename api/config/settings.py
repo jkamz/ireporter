@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'phonenumber_field',
     'rest_framework_swagger',
+    'incidents',
 ]
 
 # Rest Framework Settings
@@ -198,6 +199,8 @@ CACHES = {
 # https://docs.djangoproject.com/en/2.0/topics/auth/customizing/#substituting-a-custom-user-model
 
 AUTH_USER_MODEL = 'users.User'
+
+INCIDENTS_MODEL = 'incidents.Incident'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
