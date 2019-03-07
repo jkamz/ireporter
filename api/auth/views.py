@@ -4,7 +4,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.urls.exceptions import NoReverseMatch
 from django.utils.translation import ugettext_lazy as _
 
-from rest_framework import generics, permissions, status, views
+from rest_framework import generics, permissions, status, views, authentication
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.exceptions import PermissionDenied
@@ -159,6 +159,7 @@ class ChangeEmailView(utils.ActionViewMixin, generics.GenericAPIView):
 
 class ChangePasswordView(utils.ActionViewMixin, generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.ChangePasswordSerializer
 
     def get_serializer_class(self):
         if settings.SET_PASSWORD_RETYPE:
@@ -172,7 +173,7 @@ class ChangePasswordView(utils.ActionViewMixin, generics.GenericAPIView):
         if settings.LOGOUT_ON_PASSWORD_CHANGE:
             utils.logout_user(self.request)
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
 
 
 class PasswordResetView(utils.ActionViewMixin, generics.GenericAPIView):
@@ -184,7 +185,7 @@ class PasswordResetView(utils.ActionViewMixin, generics.GenericAPIView):
     def _action(self, serializer):
         for user in self.get_users(serializer.data['email']):
             self.send_password_reset_email(user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
 
     def get_users(self, email):
         if self._users is None:
@@ -216,4 +217,4 @@ class PasswordResetConfirmView(utils.ActionViewMixin, generics.GenericAPIView):
         serializer.user.save()
         if self.request.user.is_authenticated:
             utils.logout_user(self.request)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
