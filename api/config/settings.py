@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
+import django_heroku
 import logging
 import environ
 from django.utils.translation import gettext_lazy as _
@@ -54,12 +55,13 @@ USE_X_FORWARDED_HOST = env.bool('DJANGO_USE_X_FORWARDED_HOST', default=True)
 # https://docs.djangoproject.com/en/2.0/ref/settings/#installed-apps
 
 INSTALLED_APPS = [
+    'whitenoise.runserver_nostatic',
+    'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     'django.contrib.sites',
     'rest_framework',
     'rest_framework.authtoken',
@@ -72,6 +74,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'django.contrib.postgres',
     'phonenumber_field',
+    'incidents',
 ]
 
 # Rest Framework Settings
@@ -127,6 +130,7 @@ DJOSER = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -312,9 +316,9 @@ MOBILE_ACTIVATION_TOKEN_LENGTH = 6
 MOBILE_ACTIVATION_TOKEN_HASH_ALGORITHM = 'sha256'
 
 # Test Settings
-TEST_PAYLOAD_PATH = str(API_DIR) + '/utils/test/'
-TEST_DATA_PATH = TEST_PAYLOAD_PATH + 'data/'
-TEST_RUNNER = 'utils.test.test_runner.CMTestRunner'
+#TEST_PAYLOAD_PATH = str(API_DIR) + '/utils/test/'
+#TEST_DATA_PATH = TEST_PAYLOAD_PATH + 'data/'
+#TEST_RUNNER = 'utils.test.test_runner.CMTestRunner'
 
 # Site Reliability Team
 # https://docs.djangoproject.com/en/2.0/ref/settings/#admins
@@ -416,3 +420,4 @@ if DJANGO_ENV == 'production':
         'DSN':
         SENTRY_DSN
     }
+django_heroku.settings(locals())
