@@ -33,6 +33,7 @@ schema_view = get_schema_view(title=settings.API_BROWSER_HEADER, public=True)
 doc_urls = include_docs_urls(title=settings.API_BROWSER_HEADER)
 api_browser_urls = include('rest_framework.urls')
 auth_urls = include('auth.urls')
+incidents_urls = include('incidents.urls')
 
 urlpatterns = [
     path('api/', doc_urls),
@@ -40,6 +41,7 @@ urlpatterns = [
     path('api/schema/', schema_view),
     path('api/browser/', api_browser_urls),
     path('api/admin/', admin.site.urls),
+    path('api/', incidents_urls),
 ]
 
 urlpatterns += router.urls

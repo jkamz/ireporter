@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'django.contrib.postgres',
     'phonenumber_field',
+    'incidents',
 ]
 
 # Rest Framework Settings
