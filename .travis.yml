@@ -19,7 +19,10 @@ before_install:
 
 install:
   - pip install -r api/requirements.txt
+<<<<<<< HEAD
   - pip install coveralls
+=======
+>>>>>>> ft-add-redflag-record-164272428
 
 before_script:
   - psql -c "CREATE DATABASE drf;" -U postgres
@@ -29,5 +32,8 @@ script:
   - python api/manage.py migrate
   - python api/manage.py test
 
+<<<<<<< HEAD
 after_success:
   - coveralls
+=======
+>>>>>>> ft-add-redflag-record-164272428

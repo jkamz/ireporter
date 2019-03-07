@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'django.contrib.postgres',
     'phonenumber_field',
+    'incidents',
 ]
 
 # Rest Framework Settings
@@ -316,8 +317,13 @@ MOBILE_ACTIVATION_TOKEN_LENGTH = 6
 MOBILE_ACTIVATION_TOKEN_HASH_ALGORITHM = 'sha256'
 
 # Test Settings
+<<<<<<< HEAD
 TEST_PAYLOAD_PATH = str(API_DIR) + '/utils/test/'
 TEST_DATA_PATH = TEST_PAYLOAD_PATH + 'data/'
+=======
+#TEST_PAYLOAD_PATH = str(API_DIR) + '/utils/test/'
+#TEST_DATA_PATH = TEST_PAYLOAD_PATH + 'data/'
+>>>>>>> ft-add-redflag-record-164272428
 #TEST_RUNNER = 'utils.test.test_runner.CMTestRunner'
 
 # Site Reliability Team

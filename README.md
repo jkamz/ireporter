@@ -1,6 +1,10 @@
 # ireporter
 
+<<<<<<< HEAD
 [![Build Status](https://travis-ci.org/jkamz/ireporter.svg?branch=develop)](https://travis-ci.org/jkamz/ireporter) [![Coverage Status](https://coveralls.io/repos/github/jkamz/ireporter/badge.svg?branch=develop)](https://coveralls.io/github/jkamz/ireporter?branch=develop) [![Maintainability](https://api.codeclimate.com/v1/badges/3e33878d5311b00883bf/maintainability)](https://codeclimate.com/github/jkamz/ireporter/maintainability)
+=======
+[![Build Status](https://travis-ci.org/jkamz/ireporter.svg?branch=develop)](https://travis-ci.org/jkamz/ireporter)
+>>>>>>> ft-add-redflag-record-164272428
 
 ## Initial Auth Endpoints
  - User Signup
