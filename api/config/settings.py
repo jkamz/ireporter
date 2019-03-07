@@ -114,7 +114,7 @@ REST_FRAMEWORK = {
 DJOSER = {
     'LOGIN_URL': 'login',
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
-    'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
+    'ACTIVATION_URL': 'api/auth/activate?uid={uid}&token={token}',
     'SEND_ACTIVATION_EMAIL': True,
     'SEND_CONFIRMATION_EMAIL': True,
     'SEND_ACTIVATION_SMS': True,
@@ -293,6 +293,7 @@ EMAIL_HOST = env.str('EMAIL_SMTP_HOST', default='localhost')
 EMAIL_HOST_USER = env.str('EMAIL_SMTP_USER', default='')
 EMAIL_HOST_PASSWORD = env.str('EMAIL_SMTP_PASSWORD', default='')
 EMAIL_PORT = env.int('EMAIL_SMTP_PORT', default=1025)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=False)
 
 # Prefix for emails to administrators
 EMAIL_SUBJECT_PREFIX = '[ADMIN] '
@@ -315,8 +316,8 @@ MOBILE_ACTIVATION_TOKEN_LENGTH = 6
 MOBILE_ACTIVATION_TOKEN_HASH_ALGORITHM = 'sha256'
 
 # Test Settings
-#TEST_PAYLOAD_PATH = str(API_DIR) + '/utils/test/'
-#TEST_DATA_PATH = TEST_PAYLOAD_PATH + 'data/'
+TEST_PAYLOAD_PATH = str(API_DIR) + '/utils/test/'
+TEST_DATA_PATH = TEST_PAYLOAD_PATH + 'data/'
 #TEST_RUNNER = 'utils.test.test_runner.CMTestRunner'
 
 # Site Reliability Team
