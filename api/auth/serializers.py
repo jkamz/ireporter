@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core import exceptions as django_exceptions
 from django.db import IntegrityError, transaction
 from django.utils.translation import ugettext_lazy as _
@@ -11,6 +12,8 @@ from djoser import utils
 from djoser.conf import settings
 from config import exceptions
 
+from . import mailer
+
 User = get_user_model()
 
 
@@ -18,12 +21,15 @@ class SignUpSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         style={'input_type': 'password'}, write_only=True)
 
+    token = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = tuple(User.REQUIRED_FIELDS) + (
-            User._meta.pk.name,
+            'id',
             'email',
             'password',
+            'token',
         )
 
     def validate(self, attrs):
@@ -55,7 +61,11 @@ class SignUpSerializer(serializers.ModelSerializer):
             if settings.SEND_ACTIVATION_EMAIL:
                 user.is_active = False
                 user.save(update_fields=['is_active'])
+
         return user
+
+    def get_token(self, token):
+        return default_token_generator.make_token(token)
 
 
 class EmailAccountSerializer(serializers.Serializer):
@@ -69,7 +79,7 @@ class EmailAccountSerializer(serializers.Serializer):
 
 
 class UidAndTokenSerializer(serializers.Serializer):
-    uid = serializers.CharField()
+    uid = serializers.IntegerField()
     token = serializers.CharField()
 
     default_error_messages = {
@@ -83,7 +93,7 @@ class UidAndTokenSerializer(serializers.Serializer):
 
     def validate_uid(self, value):
         try:
-            uid = utils.decode_uid(value)
+            uid = value
             self.user = User.objects.get(pk=uid)
         except (User.DoesNotExist, ValueError, TypeError, OverflowError):
             self.fail('invalid_uid')
