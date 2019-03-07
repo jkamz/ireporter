@@ -2,11 +2,21 @@ from django.db import models
 import uuid
 from django.contrib.auth import get_user_model
 
+<<<<<<< HEAD
+=======
+def generate_incident_id():
+    """generate unique incidet id"""
+    return str(uuid.uuid4()).split("-")[-1]
+>>>>>>> 7008aff155fae1763163852dd4b353092276038d
 
 class Incident(models.Model):
     """The incident model."""
 
+<<<<<<< HEAD
     incident_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
+=======
+    incident_id = models.CharField(max_length=255, blank=True)
+>>>>>>> 7008aff155fae1763163852dd4b353092276038d
     createdBy = models.ForeignKey(
         get_user_model(),
         related_name='createdBy',
