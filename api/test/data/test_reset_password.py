@@ -37,79 +37,80 @@ class TestResetPassword(TestCase):
             "email": ''
         }
 
-    def signup_user_and_fetch_details(self, data=''):
-        """
-        This method signs up a user and returns
-        user id and the token
-        """
-        data = self.user_data
+        self.email = {
+            "email":self.user_data['email']
+        }
 
         self.response = self.client.post(
             reverse('user_signup'),
-            data,
-            format="json"
-        )
-
-        user_id, token = self.response.context['uid'], \
-            self.response.context['token']
-
-        return user_id, token
-
-    def test_activate_account_and_reset_password(self, activate_data=''):
-        """
-        This method tests for user activate account using
-        data from signup, reset password, and confirms new password
-        """
-
-        data = self.signup_user_and_fetch_details()
-
-        reset_password_confirm_url = reverse('reset_password_confirm')
-        extra_params = ('?uid=%s&token=%s' % (data[0],data[1]))
-        new_redirect_url = (reset_password_confirm_url + extra_params)
-
+            self.user_data,
+            format="json")
+        uid = self.response.context['uid']
+        token = self.response.context['token']
         self.activation_data = {
-            "uid": data[0],
-            "token": data[1]
+            'uid': uid,
+            'token': token
         }
-
-        if not activate_data:
-            activate_data = self.activation_data
-
-        self.client.post(
+        reset_password_confirm_url = reverse('reset_password_confirm')
+        extra_params = ('?uid=%s&token=%s' % (uid,token))
+        
+        self.new_redirect_url = (reset_password_confirm_url + extra_params)
+        self.activate = self.client.post(
             reverse('user_activate'),
             self.activation_data,
-            format="json"
-        )
-
-        self.client.post(
+            format="json")
+        self.reset_response = self.client.post(
             reverse('reset_password'),
             self.user_data['email'],
             format="json"
         )
 
+    def test_reset_password(self):
+        """
+        This method tests for user reset confirm password
+        """
+        
+        self.response
+        self.activate
+        response =  self.client.post(
+            reverse('reset_password'),
+            self.email,
+            format="json"
+        )
+
+        self.assertEqual(response.status_code,
+                         status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'Check email to reset password.')
+
+    def test_reset_password_confirm(self):
+        """
+        This method tests for user reset confirm password
+        """
+
         self.reset_confirm_data = {
             "new_password": "pass123key",
             "re_new_password": "pass123key"
         }
-
-        self.response = self.client.post(new_redirect_url,
+ 
+        self.response = self.client.patch(self.new_redirect_url,
             self.reset_confirm_data,
             format="json"
         )
 
         self.assertEqual(self.response.status_code,
                          status.HTTP_200_OK)
+        self.assertEqual(self.response.data['message'], 'Password reset successfully.')
+        self.assertEqual(self.response.data['status'], 200)
 
     def test_user_cannot_reset_password_with_account_not_activated(self):
         """
         Test method to ensure users cannot reset password with unverified
         email address
         """
-        data = self.user_data
 
         self.client.post(
             reverse('user_signup'),
-            data,
+            self.user_data,
             format="json"
         )
         self.response = self.client.post(
@@ -121,7 +122,7 @@ class TestResetPassword(TestCase):
         self.assertEqual(self.response.status_code,
                          status.HTTP_400_BAD_REQUEST)
 
-    def test_error_when_unregistered_email_used(self, activate_data=''):
+    def test_error_when_unregistered_email_used(self):
         """
         Tests to test for unregistered email used to reset password
         """
@@ -145,3 +146,19 @@ class TestResetPassword(TestCase):
         self.assertEqual(self.response.status_code,
                          status.HTTP_400_BAD_REQUEST)
 
+    def test_error_when_reset_passwords_do_not_match(self):
+        """Test for a missing field during password reset"""
+
+        self.reset_response
+        self.reset_confirm_data = {
+            "new_password": "pass123key",
+            "re_new_password": "passkey"
+        }
+ 
+        self.response = self.client.patch(self.new_redirect_url,
+            self.reset_confirm_data,
+            format="json"
+        )
+        
+        self.assertEqual(self.response.status_code,
+                         status.HTTP_400_BAD_REQUEST)

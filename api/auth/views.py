@@ -23,6 +23,8 @@ from rest_framework_jwt.settings import api_settings
 from rest_framework import permissions
 from django.http import JsonResponse
 
+from users.models import User
+
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
 
@@ -236,7 +238,7 @@ class PasswordResetView(utils.ActionViewMixin, generics.GenericAPIView):
     def _action(self, serializer):
         for user in self.get_users(serializer.data['email']):
             self.send_password_reset_email(user)
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK, data={'message':'Check email to reset password.', 'status':200})
 
     def get_users(self, email):
         if self._users is None:
@@ -254,7 +256,7 @@ class PasswordResetView(utils.ActionViewMixin, generics.GenericAPIView):
         mailer.PasswordResetEmail(self.request, context, recipient).send()
 
 
-class PasswordResetConfirmView(utils.ActionViewMixin, generics.GenericAPIView):
+class PasswordResetConfirmView(utils.ActionViewMixin, generics.UpdateAPIView):
     """
     post:
     Confirming a user's reset password.
@@ -267,9 +269,16 @@ class PasswordResetConfirmView(utils.ActionViewMixin, generics.GenericAPIView):
             return serializers.PasswordResetConfirmRetypeSerializer
         return serializers.PasswordResetConfirmSerializer
 
-    def _action(self, serializer):
-        serializer.user.set_password(serializer.data['new_password'])
-        serializer.user.save()
-        if self.request.user.is_authenticated:
-            utils.logout_user(self.request)
-        return Response(status=status.HTTP_200_OK)
+    def partial_update(self, request, pk=None):
+        uid = self.request.query_params.get('uid')
+        serializer = User.objects.get(pk=uid)
+        
+        if request.data['new_password'] != request.data['re_new_password']:
+            return JsonResponse({
+                'error': 'Ensure both passwords match.',
+                'status': 400
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer.set_password(request.data['new_password'])
+        serializer.save()
+        return Response(status=status.HTTP_200_OK, data={'message':'Password reset successfully.', 'status':200})

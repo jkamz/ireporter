@@ -109,6 +109,7 @@ class UidAndTokenSerializer(serializers.Serializer):
 
         return attrs
 
+
 class LoginTokenSerializer(serializers.Serializer):
     """
     This serializer serializes the token data
@@ -116,6 +117,7 @@ class LoginTokenSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=255)
     username = serializers.CharField()
     password = serializers.CharField(style={'input_type': 'password'})
+
 
 class UidAndTokenQueryParamsSerializer(serializers.Serializer):
 
