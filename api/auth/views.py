@@ -178,7 +178,7 @@ class PasswordResetView(utils.ActionViewMixin, generics.GenericAPIView):
     def _action(self, serializer):
         for user in self.get_users(serializer.data['email']):
             self.send_password_reset_email(user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
 
     def get_users(self, email):
         if self._users is None:
@@ -210,4 +210,4 @@ class PasswordResetConfirmView(utils.ActionViewMixin, generics.GenericAPIView):
         serializer.user.save()
         if self.request.user.is_authenticated:
             utils.logout_user(self.request)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
