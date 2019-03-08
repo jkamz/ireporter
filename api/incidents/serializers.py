@@ -17,3 +17,4 @@ class IncidentSerializer(serializers.ModelSerializer):
         incident = TABLE.objects.create(**validated_data)
         return incident
         
+        
