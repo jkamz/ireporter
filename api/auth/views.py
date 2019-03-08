@@ -60,8 +60,6 @@ class SignUpView(generics.CreateAPIView):
         recipient = [get_user_email(user)]
         if settings.SEND_ACTIVATION_EMAIL:
             mailer.ActivationEmail(self.request, context, recipient).send()
-        elif settings.SEND_CONFIRMATION_EMAIL:
-            mailer.ConfirmationEmail(self.request, context, recipient).send()
 
 
 class ResendActivationView(utils.ActionViewMixin, generics.GenericAPIView):
@@ -106,15 +104,11 @@ class ActivationView(utils.ActionViewMixin, generics.GenericAPIView):
         user.is_active = True
         user.save()
 
-        signals.user_activated.send(
-            sender=self.__class__, user=user, request=self.request)
+        response_data = {
+            "message": "Your account has been activated."
+        }
 
-        if settings.SEND_CONFIRMATION_EMAIL:
-            context = {'user': user}
-            recipient = [get_user_email(user)]
-            mailer.ConfirmationEmail(self.request, context, recipient).send()
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(data=response_data ,status=status.HTTP_200_OK)
 
 
 class LoginView(utils.ActionViewMixin, generics.GenericAPIView):

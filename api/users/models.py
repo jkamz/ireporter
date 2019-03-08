@@ -1,4 +1,3 @@
-import uuid
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -15,7 +14,7 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError('The email must be set')
         email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+        user = self.model(email=email.lower(), **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -24,7 +23,7 @@ class UserManager(BaseUserManager):
         """Create and save a regular User with the given email and password."""
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email.lower(), password, **extra_fields)
 
     def create_superuser(self, email, password, **extra_fields):
         """Create and save a SuperUser with the given email and password."""
@@ -36,22 +35,20 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email.lower(), password, **extra_fields)
 
 
 class User(AbstractUser):
-
-    username = None
-    first_name = None
-    last_name = None
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    first_name = models.CharField(max_length=255, null=False)
+    last_name = models.CharField(max_length=255, null=False)
+    other_name = models.CharField(max_length=255, null=False)
+    username = models.CharField(max_length=255, null=False, unique=True)
+    mobile_number = PhoneNumberField(unique=True, null=False)
     email = models.EmailField(_('email address'), unique=True, null=True)
-    name = models.CharField(max_length=255)
-    nick_name = models.CharField(max_length=255)
-    mobile_number = PhoneNumberField(unique=True, null=True)
-
+    
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['name', 'nick_name']
+    REQUIRED_FIELDS = ['first_name','last_name', 'other_name', 'username', 'mobile_number']
 
     objects = UserManager()
 

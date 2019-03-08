@@ -114,8 +114,8 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'LOGIN_URL': 'login',
-    'PASSWORD_RESET_CONFIRM_URL': 'api/auth/reset_password_confirm/?uid={uid}&token={token}',
-    'ACTIVATION_URL': 'auth/activate/?uid={uid}&token={token}',
+    'PASSWORD_RESET_CONFIRM_URL': 'api/auth/reset_password_confirm?uid={uid}&token={token}',
+    'ACTIVATION_URL': 'api/auth/activate?uid={uid}&token={token}',
     'SEND_ACTIVATION_EMAIL': True,
     'SEND_CONFIRMATION_EMAIL': True,
     'SEND_ACTIVATION_SMS': True,
@@ -318,8 +318,8 @@ MOBILE_ACTIVATION_TOKEN_HASH_ALGORITHM = 'sha256'
 
 # Test Settings
 TEST_PAYLOAD_PATH = str(API_DIR) + '/utils/test/'
-TEST_DATA_PATH = TEST_PAYLOAD_PATH + 'data/test.py'
-# TEST_RUNNER = 'utils.test.test_runner.CMTestRunner'
+TEST_DATA_PATH = TEST_PAYLOAD_PATH + 'data/'
+#TEST_RUNNER = 'utils.test.test_runner.CMTestRunner'
 
 # Site Reliability Team
 # https://docs.djangoproject.com/en/2.0/ref/settings/#admins
