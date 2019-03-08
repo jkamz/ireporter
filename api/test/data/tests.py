@@ -1,10 +1,15 @@
 import json
 from django.test import TestCase
 from users.models import User
+from incidents.views import CreateIncidentView
+from incidents.models import Incident
 
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.urls import reverse
+from django.shortcuts import redirect
+from rest_framework.test import APIRequestFactory
+from rest_framework.test import force_authenticate
 
 class ModelTestCase(TestCase):
     """
@@ -82,7 +87,7 @@ class UserSignupViewCase(TestCase):
         """
         This method 'register_user' registers an account
         using provided a user's details and returns the 
-        token and user id used for activation of data
+        token and userlocation used for activation of data
         """
 
         if not data:
@@ -178,3 +183,108 @@ class UserSignupViewCase(TestCase):
 
         self.assertEqual(self.activate_account(
             activate_data=activate).status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class IncidetCaseTest(TestCase):
+    
+    def setUp(self):
+        """ Define the test client and test variables. """
+
+        self.client = APIClient()
+
+        self.user_data = {
+            "first_name": 'Adeline',
+            "other_name": 'Ranger',
+            "last_name": 'Goethe',
+            "email": 'Ranger@gmail.com',
+            "username": 'Ranger',
+            "mobile_number": '+254701020304',
+            "password": 'adminPassw0rd'
+        }
+        
+        self.incident_data = { 
+             'title' : 'This is the title', 
+             'status' : "pending", 
+             'Image' : '', 
+             'Video' : '', 
+             'comment' : 'This is the comment', 
+             'incident_type' : 'red-flag',
+             'location' : 'Narok'
+         }
+
+        self.response = self.client.post(
+            reverse('user_signup'),
+            self.user_data,
+            format="json"
+        )
+
+    def test_can_create_redflag_record(self):
+        user = User.objects.get(username='Ranger')
+        view = CreateIncidentView.as_view({'post': 'create'})
+        factory = APIRequestFactory()
+        request = factory.post('/api/redflags/', self.incident_data)
+        force_authenticate(request, user=user, token=self.response.context['token'])
+        response = view(request)
+
+        assert response.status_code == 201, response.rendered_content
+
+    def test_requires_title(self):
+        new_incident = self.incident_data
+        new_incident.update({'title':''})
+        user = User.objects.get(username='Ranger')
+        view = CreateIncidentView.as_view({'post': 'create'})
+        factory = APIRequestFactory()
+        request = factory.post('/api/redflags/', new_incident)
+        force_authenticate(request, user=user, token=self.response.context['token'])
+        response = view(request)
+
+        assert response.status_code == 400, response.rendered_content
+
+    def test_requires_status(self):
+        new_incident = self.incident_data
+        new_incident.update({'status':''})
+        user = User.objects.get(username='Ranger')
+        view = CreateIncidentView.as_view({'post': 'create'})
+        factory = APIRequestFactory()
+        request = factory.post('/api/redflags/', new_incident)
+        force_authenticate(request, user=user, token=self.response.context['token'])
+        response = view(request)
+
+        assert response.status_code == 400, response.rendered_content
+
+    def test_requires_comment(self):
+        new_incident = self.incident_data
+        new_incident.update({'comment':''})
+        user = User.objects.get(username='Ranger')
+        view = CreateIncidentView.as_view({'post': 'create'})
+        factory = APIRequestFactory()
+        request = factory.post('/api/redflags/', new_incident)
+        force_authenticate(request, user=user, token=self.response.context['token'])
+        response = view(request)
+        
+        assert response.status_code == 400, response.rendered_content
+
+    def test_requires_location(self):
+        new_incident = self.incident_data
+        new_incident.update({'location':''})
+        user = User.objects.get(username='Ranger')
+        view = CreateIncidentView.as_view({'post': 'create'})
+        factory = APIRequestFactory()
+        request = factory.post('/api/redflags/', new_incident)
+        force_authenticate(request, user=user, token=self.response.context['token'])
+        response = view(request)
+
+        assert response.status_code == 400, response.rendered_content
+
+    def test_requires_incident_type(self):
+        new_incident = self.incident_data
+        new_incident.update({'incident_type':''})
+        user = User.objects.get(username='Ranger')
+        view = CreateIncidentView.as_view({'post': 'create'})
+        factory = APIRequestFactory()
+        request = factory.post('/api/redflags/', new_incident)
+        force_authenticate(request, user=user, token=self.response.context['token'])
+        response = view(request)
+
+        assert response.status_code == 400, response.rendered_content
+        
