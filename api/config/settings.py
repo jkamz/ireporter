@@ -114,8 +114,8 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'LOGIN_URL': 'login',
-    'PASSWORD_RESET_CONFIRM_URL': 'api/auth/reset_password_confirm/?uid={uid}&token={token}',
-    'ACTIVATION_URL': 'auth/activate/?uid={uid}&token={token}',
+    'PASSWORD_RESET_CONFIRM_URL': 'api/auth/reset_password_confirm?uid={uid}&token={token}',
+    'ACTIVATION_URL': 'api/auth/activate?uid={uid}&token={token}',
     'SEND_ACTIVATION_EMAIL': True,
     'SEND_CONFIRMATION_EMAIL': True,
     'SEND_ACTIVATION_SMS': True,
