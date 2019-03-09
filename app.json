@@ -1,0 +1,72 @@
+{
+  "addons": [
+    "heroku-postgresql"
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "ADMIN_SITE_HEADER": {
+      "required": true
+    },
+    "API_BROWSER_HEADER": {
+      "required": true
+    },
+    "DEFAULT_FROM_EMAIL": {
+      "required": true
+    },
+    "DEFAULT_SERVER_EMAIL": {
+      "required": true
+    },
+    "DISABLE_COLLECTSTATIC": {
+      "required": true
+    },
+    "DJANGO_ALLOWED_HOSTS": {
+      "required": true
+    },
+    "DJANGO_SECRET_KEY": {
+      "required": true
+    },
+    "DOMAIN": {
+      "required": true
+    },
+    "EMAIL_SMTP_HOST": {
+      "required": true
+    },
+    "EMAIL_SMTP_PASSWORD": {
+      "required": true
+    },
+    "EMAIL_SMTP_PORT": {
+      "required": true
+    },
+    "EMAIL_SMTP_USER": {
+      "required": true
+    },
+    "EMAIL_USE_TLS": {
+      "required": true
+    },
+    "SITE_LOGO_URL": {
+      "required": true
+    },
+    "SITE_NAME": {
+      "required": true
+    },
+    "SITE_OWNER_NAME": {
+      "required": true
+    },
+    "SITE_OWNER_URL": {
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "name": "ireporter",
+  "scripts": {
+  },
+  "stack": "heroku-18"
+}
