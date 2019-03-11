@@ -110,6 +110,39 @@ class UidAndTokenSerializer(serializers.Serializer):
         return attrs
 
 
+class UidAndTokenQueryParamsSerializer(serializers.Serializer):
+
+    default_error_messages = {
+        'invalid_token': _('The provided token for the user is not valid.'),
+        'invalid_uid': _('Invalid user id, the user does not exist.'),
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(UidAndTokenQueryParamsSerializer, self).__init__(*args, **kwargs)
+        self.user = None
+
+    def validate_uid(self, value):
+        try:
+            uid = value
+            self.user = User.objects.get(pk=uid)
+        except (User.DoesNotExist, ValueError, TypeError, OverflowError):
+            self.fail('invalid_uid')
+
+        return value
+
+    def validate(self, attrs):
+        uid= self.context['request'].query_params.get('uid')
+        token = self.context['request'].query_params.get('token')
+        # validate uid
+        self.validate_uid(uid)
+        is_token_valid = self.context['view'].token_generator.check_token(
+            self.user, token)
+        if not is_token_valid:
+            self.fail('invalid_token')
+
+        return attrs
+
+
 class TokenSerializer(serializers.ModelSerializer):
     auth_token = serializers.CharField(source='key')
 
@@ -224,11 +257,11 @@ class ChangeEmailSerializer(serializers.ModelSerializer):
         fields = ('email', )
 
 
-class PasswordResetConfirmSerializer(UidAndTokenSerializer,
+class PasswordResetConfirmSerializer(UidAndTokenQueryParamsSerializer,
                                      PasswordSerializer):
     pass
 
 
-class PasswordResetConfirmRetypeSerializer(UidAndTokenSerializer,
+class PasswordResetConfirmRetypeSerializer(UidAndTokenQueryParamsSerializer,
                                            PasswordRetypeSerializer):
     pass
