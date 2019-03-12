@@ -1,4 +1,3 @@
-appnope==0.1.0
 Babel==2.6.0
 backcall==0.1.0
 certifi==2018.8.24
@@ -15,7 +14,6 @@ django-macros==0.4.0
 django-mail-templated==2.6.5
 django-phonenumber-field==2.0.1
 django-redis==4.9.0
-django-rest-swagger==2.2.0
 django-settings-export==1.2.1
 django-templated-mail==1.1.1
 djangorestframework==3.8.2
@@ -30,7 +28,6 @@ itypes==1.1.0
 jedi==0.13.1
 Jinja2==2.10
 MarkupSafe==1.0
-openapi-codec==1.3.2
 parso==0.3.1
 pexpect==4.6.0
 phonenumbers==8.9.15
@@ -44,7 +41,6 @@ pytz==2018.5
 redis==2.10.6
 requests==2.20.0
 simplegeneric==0.8.1
-simplejson==3.16.0
 six==1.11.0
 traitlets==4.3.2
 uritemplate==3.0.0
