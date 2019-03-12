@@ -20,13 +20,9 @@ from django.conf.urls import include
 from rest_framework.schemas import get_schema_view
 from rest_framework.documentation import include_docs_urls
 from django.conf.urls.static import static
-from rest_framework_swagger.views import get_swagger_view
 
 from auth.views import AuthApiListView
 from utils.router import DefaultRouterWithAPIViews
-
-# swagger 
-swagger_view = get_swagger_view(title='iReporter_API')
 
 admin.site.site_header = settings.ADMIN_SITE_HEADER
 
@@ -40,7 +36,6 @@ auth_urls = include('auth.urls')
 
 urlpatterns = [
     path('api/', doc_urls),
-    path('api/ireporter/docs', swagger_view),
     path('api/auth/', auth_urls),
     path('api/schema/', schema_view),
     path('api/browser/', api_browser_urls),
@@ -53,4 +48,3 @@ urlpatterns += router.urls
 # https://docs.djangoproject.com/en/2.0/howto/static-files/#serving-files-uploaded-by-a-user-during-development
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
