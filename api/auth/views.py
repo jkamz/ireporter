@@ -17,6 +17,16 @@ from config import exceptions
 from . import serializers
 from . import mailer
 
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
+from rest_framework_jwt.settings import api_settings
+from rest_framework import permissions
+from django.http import JsonResponse
+
+jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
+jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+
+
 User = get_user_model()
 
 
@@ -127,18 +137,26 @@ class ActivationView(utils.ActionViewMixin, generics.GenericAPIView):
         return Response(data=response_data ,status=status.HTTP_200_OK)
 
 
-class LoginView(utils.ActionViewMixin, generics.GenericAPIView):
-    """
-    post:
-    Login a user.
-    """
-    serializer_class = serializers.LoginSerializer
-    permission_classes = [permissions.AllowAny]
+class LoginView(generics.GenericAPIView):
+    serializer_class = serializers.LoginTokenSerializer
+    permission_classes = (permissions.AllowAny,)
+    queryset = User.objects.all()
 
-    def _action(self, serializer):
-        token = utils.login_user(self.request, serializer.user)
-        token_serializer_class = serializers.TokenSerializer
-        return Response(data=token_serializer_class(token).data)
+    def post(self, request):
+        username = request.data.get("username", "")
+        password = request.data.get("password", "")
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            serializer = self.serializer_class(data={
+                "token": jwt_encode_handler(
+                    jwt_payload_handler(user)
+                )})
+            serializer.is_valid()
+            return Response(serializer.data)
+        return JsonResponse(
+            {"message" : "Wrong username or password"}, status=status.HTTP_401_UNAUTHORIZED
+            )
 
 
 class LogoutView(views.APIView):

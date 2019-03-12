@@ -29,17 +29,17 @@ class UserLoginTest(TestCase):
         }
 
         self.valid_login_data = {
-            "email": 'test@gmail.com',
+            "username": 'test@gmail.com',
             "password": 'adminPassw0rd'
         }
 
         self.wrong_login_data = {
-            "email": 'test@gmail.com',
+            "username": 'test@gmail.com',
             "password": 'wrong'
         }
 
         self.missing_login_data = {
-            "email": 'test@gmail.com'
+            "username": 'test@gmail.com'
         }
 
     def signup_user_and_fetch_details(self, data=''):
@@ -77,14 +77,12 @@ class UserLoginTest(TestCase):
         if not activate_data:
             activate_data = self.activation_data
 
-        # activate the account
         self.client.post(
             reverse('user_activate'),
             self.activation_data,
             format="json"
         )
 
-        # login the user
         self.response = self.client.post(
             self.login_url,
             self.valid_login_data,
@@ -106,7 +104,6 @@ class UserLoginTest(TestCase):
         Test method to verify user cannot login
         with unverfied email address
         """
-        # sign-up user
         data = self.user_data
 
         self.client.post(
@@ -114,15 +111,13 @@ class UserLoginTest(TestCase):
             data,
             format="json"
         )
-        # login the user without activating
         self.response = self.client.post(
             self.login_url,
             self.valid_login_data,
             format="json"
         )
-        # assert
         self.assertEqual(self.response.status_code,
-                         status.HTTP_400_BAD_REQUEST)
+                         status.HTTP_401_UNAUTHORIZED)
 
     def test_error_when_wrong_login_detail(self, activate_data=''):
         """
@@ -139,21 +134,19 @@ class UserLoginTest(TestCase):
         if not activate_data:
             activate_data = self.activation_data
 
-        # activate the account
         self.client.post(
             reverse('user_activate'),
             self.activation_data,
             format="json"
         )
 
-        # login the user
         self.response = self.client.post(
             self.login_url,
             self.wrong_login_data,
             format="json"
         )
         self.assertEqual(self.response.status_code,
-                         status.HTTP_400_BAD_REQUEST)
+                         status.HTTP_401_UNAUTHORIZED)
 
     def test_error_when_missing_field(self):
         """method to test when a field is missing during log in"""
@@ -164,4 +157,4 @@ class UserLoginTest(TestCase):
             format="json"
         )
         self.assertEqual(self.response.status_code,
-                         status.HTTP_400_BAD_REQUEST)
+                         status.HTTP_401_UNAUTHORIZED)
