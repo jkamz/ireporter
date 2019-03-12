@@ -109,6 +109,13 @@ class UidAndTokenSerializer(serializers.Serializer):
 
         return attrs
 
+class LoginTokenSerializer(serializers.Serializer):
+    """
+    This serializer serializes the token data
+    """
+    token = serializers.CharField(max_length=255)
+    username = serializers.CharField()
+    password = serializers.CharField(style={'input_type': 'password'})
 
 class UidAndTokenQueryParamsSerializer(serializers.Serializer):
 
@@ -149,44 +156,6 @@ class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = settings.TOKEN_MODEL
         fields = ('auth_token', )
-
-
-class LoginSerializer(serializers.Serializer):
-    email = serializers.CharField()
-    password = serializers.CharField(style={'input_type': 'password'})
-
-    def __init__(self, *args, **kwargs):
-        super(LoginSerializer, self).__init__(*args, **kwargs)
-        self.user = None
-
-    def validate(self, attrs):
-        username = attrs.get('email')
-        password = attrs.get('password')
-
-        user_account = self._get_user_by_username(username)
-        if not user_account:
-            raise drf_exceptions.AuthenticationFailed(
-                _('Unable to login with the provided credentials.'))
-
-        self.user = authenticate(username=username, password=password)
-        if not self.user:
-            if user_account.is_active:
-                raise drf_exceptions.AuthenticationFailed(
-                    _('Unable to login with the provided credentials.'))
-            else:
-                raise drf_exceptions.PermissionDenied(
-                    _('The account is inactive, please activate your account.'
-                      ), 'notActivated')
-
-        return attrs
-
-    @staticmethod
-    def _get_user_by_username(username):
-        user = User.objects.filter(**{
-            User.USERNAME_FIELD + '__iexact': username
-        }).first()
-
-        return user
 
 
 class PasswordSerializer(serializers.Serializer):
