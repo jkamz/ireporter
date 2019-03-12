@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from django.urls import reverse
 
+
 class ModelTestCase(TestCase):
     """
     This class defines the test suite for user registration
@@ -34,7 +35,7 @@ class ModelTestCase(TestCase):
 
 
 class UserSignupViewCase(TestCase):
-    """ 
+    """
     Test suite for the user registration api view
     """
 
@@ -81,7 +82,7 @@ class UserSignupViewCase(TestCase):
     def fetch_activation_details(self, data=''):
         """
         This method 'register_user' registers an account
-        using provided a user's details and returns the 
+        using provided a user's details and returns the
         token and user id used for activation of data
         """
 
@@ -116,7 +117,7 @@ class UserSignupViewCase(TestCase):
         return self.response
 
     def activate_account(self, activate_data=''):
-        """ 
+        """
         This methods 'activate_account' activates a user
         account.
         """
@@ -142,7 +143,7 @@ class UserSignupViewCase(TestCase):
     def test_successful_registration_if_correct_details(self):
         """
         Test for successfull creation of user account
-        if correct data provided. 
+        if correct data provided.
         """
 
         self.assertEqual(self.response.status_code, status.HTTP_201_CREATED)
@@ -158,7 +159,7 @@ class UserSignupViewCase(TestCase):
 
     def test_error_raised_if_missing_key(self):
         """
-        Tests for failure to register user if missing data 
+        Tests for failure to register user if missing data
         """
 
         new_user = self.register_user(data=self.missing_user_data)
