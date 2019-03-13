@@ -9,6 +9,8 @@ from rest_framework.permissions import (
 )
 from django.http import JsonResponse
 
+from django.http.response import Http404
+
 
 class RedflagView(viewsets.ModelViewSet):
     """
@@ -54,3 +56,26 @@ class RedflagView(viewsets.ModelViewSet):
     def create(self, request):
         request.data['createdBy'] = request.user.id
         return self.validate_record(request)
+
+    def destroy(self, request, **kwargs):
+
+        user_id, response = request.user.id, {}
+
+        try:
+            instance = self.get_object()
+
+            if int(instance.createdBy) != user_id:
+
+                response['status'], response['error'] = 403, 'You can not delete a redflag you do not own'
+
+            else:
+                self.perform_destroy(instance)
+
+                response['status'], response['message'] = 200, 'Redflag record successfully deleted'
+
+        except Http404:
+
+            response['status'], response['error'] = 404, 'Redflag record could not be found'
+
+        return Response(data=response, status=response['status'])
+        

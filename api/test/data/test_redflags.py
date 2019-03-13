@@ -6,6 +6,7 @@ from incidents.views import RedflagView
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.urls import reverse
+import json
 
 
 class RedflagCaseTest(TestCase):
@@ -41,7 +42,49 @@ class RedflagCaseTest(TestCase):
             'location': 'Narok'
         }
 
+        self.control_user_data = {
+            "first_name": 'Jim',
+            "other_name": 'Powel',
+            "last_name": 'Goethe',
+            "email": 'testers@gmail.com',
+            "username": 'Powel',
+            "mobile_number": '+254701020305',
+            "password": 'adminPassw0rd'
+        }
+
         self.token = self.activate_account_and_login()
+
+        self.control_user = self.client.post(
+            reverse('user_signup'),
+            self.control_user_data,
+            format="json"
+        )
+
+        self.activation_data = {
+            "uid": self.control_user.data['id'],
+            "token": self.control_user.data['token']
+        }
+
+        activation = self.client.post(
+            reverse('user_activate'),
+            self.activation_data,
+            format="json"
+        )
+
+        self.control_login = {
+            'username': 'testers@gmail.com',
+            'password': 'adminPassw0rd'
+        }
+
+        self.login_control = self.client.post(
+            self.login_url,
+            data=self.control_login,
+            format="json"
+        )
+
+        # print(json.loads(self.login_control.content))
+
+        self.control_token = self.login_control.data['token']
 
     def signup_user_and_fetch_details(self, data=''):
         """
@@ -91,6 +134,14 @@ class RedflagCaseTest(TestCase):
         )
 
         return self.response.data['token']
+
+    def delete_redflag(self, url='/api/redflags/redflag-id/'):
+        """ Deletes a redflag record """
+
+        response = self.client.delete(
+            url, HTTP_AUTHORIZATION='Bearer ' + self.token)
+
+        return response
 
     def test_can_create_redflag_record(self):
         view = RedflagView.as_view({'post': 'create'})
@@ -146,3 +197,46 @@ class RedflagCaseTest(TestCase):
                                     format='json')
 
         assert response.status_code == 409, response.rendered_content
+
+    def test_deletes_redflag_if_correct_details(self):
+        """
+        Tests for successful deletion of redflag record if
+        user owns an existing redflag record
+        """
+
+        new_incident = self.client.post('/api/redflags/', self.incident_data,
+                                        HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
+
+        flag_id = new_incident.data['data']['id']
+
+        self.assertEqual(new_incident.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(self.delete_redflag(
+            url='/api/redflags/{}/'.format(flag_id)).status_code, status.HTTP_200_OK)
+
+    def test_raises_error_if_missing_record(self):
+        """
+        Tests for failure to delete if redflag record does
+        not already exist
+        """
+
+        self.assertEqual(self.delete_redflag(
+            url='/api/redflags/2000/').status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_raises_error_if_not_record_owner(self):
+        """
+        Tests for failure to delete if the user doesn't own
+        the record
+        """
+
+        new_incident = self.client.post('/api/redflags/', self.incident_data,
+                                        HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
+
+        flag_id = new_incident.data['data']['id']
+
+        self.assertEqual(new_incident.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.delete(
+            '/api/redflags/{}/'.format(flag_id), HTTP_AUTHORIZATION='Bearer ' + self.control_token)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
