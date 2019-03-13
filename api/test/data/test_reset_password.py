@@ -91,7 +91,7 @@ class TestResetPassword(TestCase):
             "new_password": "pass123key",
             "re_new_password": "pass123key"
         }
- 
+
         self.response = self.client.post(new_redirect_url,
             self.reset_confirm_data,
             format="json"
@@ -144,5 +144,4 @@ class TestResetPassword(TestCase):
         )
         self.assertEqual(self.response.status_code,
                          status.HTTP_400_BAD_REQUEST)
-
 

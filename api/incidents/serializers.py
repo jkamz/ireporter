@@ -13,6 +13,7 @@ class IncidentSerializer(serializers.ModelSerializer):
         model = TABLE
         fields = (
             'id',
+            'url',
             'createdBy',
             'title',
             'incident_type',
@@ -26,3 +27,4 @@ class IncidentSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         incident = TABLE.objects.create(**validated_data)
         return incident
+

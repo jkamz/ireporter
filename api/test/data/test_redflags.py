@@ -240,3 +240,48 @@ class RedflagCaseTest(TestCase):
             '/api/redflags/{}/'.format(flag_id), HTTP_AUTHORIZATION='Bearer ' + self.control_token)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+    def test_get_all_redlfags(self):
+        view = RedflagView.as_view({'post': 'create'})
+        self.client.post('/api/redflags/',
+                         self.incident_data,
+                         HTTP_AUTHORIZATION='Bearer ' + self.token,
+                         format='json')
+
+        view = RedflagView.as_view({'get': 'list'})
+        response = self.client.get('/api/redflags/',
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertTrue(result['data'])
+        assert response.status_code == 200, response.content
+
+    def test_get_one_redlfag(self):
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = flag_details['data']['url']
+
+        view = RedflagView.as_view({'get': 'retrieve'})
+        response = self.client.get(flag_url,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertTrue(result['data'])
+        assert response.status_code == 200, response.content
+
+    def test_redlag_not_found(self):
+        view = RedflagView.as_view({'get': 'retrieve'})
+        response = self.client.get('/api/redflags/20/',
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertEqual(result['message'], 'Redflag with id 20 not found')
+        assert response.status_code == 404, response.content
+
