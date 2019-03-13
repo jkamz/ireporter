@@ -17,6 +17,7 @@ class UserLoginTest(TestCase):
 
         self.client = APIClient()
         self.login_url = reverse('user_login')
+        self.token = ''
 
         self.user_data = {
             "first_name": 'Adeline',

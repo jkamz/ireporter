@@ -15,6 +15,7 @@ import logging
 import environ
 from django.utils.translation import gettext_lazy as _
 import os
+from datetime import timedelta
 import datetime
 
 # Project Base Paths
@@ -76,6 +77,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'phonenumber_field',
     'rest_framework_swagger',
+    'incidents',
 ]
 
 # Rest Framework Settings
@@ -262,6 +264,10 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+REST_AUTH_SERIALIZERS = {
+    'USER_DETAILS_SERIALIZER': 'users.User',
+}
 
 # Sites Framework
 # https://docs.djangoproject.com/en/2.0/ref/settings/#std:setting-SITE_ID
