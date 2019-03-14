@@ -9,3 +9,4 @@ router.register('redflags', RedflagView)
 urlpatterns = [
     path('', include(router.urls)),
 ]
+

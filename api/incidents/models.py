@@ -20,3 +20,4 @@ class RedflagModel(models.Model):
 
     class Meta:
         ordering = ["-createdOn"]
+
