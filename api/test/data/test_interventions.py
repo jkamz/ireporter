@@ -5,6 +5,7 @@ from interventions.views import InterventionsView
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.urls import reverse
+import json
 
 
 class InterventionsTestsCase(TestCase):
@@ -208,3 +209,49 @@ class InterventionsTestsCase(TestCase):
 
         self.assertEqual(self.response.status_code,
                          status.HTTP_400_BAD_REQUEST)
+    
+    def test_get_all_interventions(self):
+        view = InterventionsView.as_view({'post': 'create'})
+        self.client.post('/api/interventions/',
+                         self.intervention_data,
+                         HTTP_AUTHORIZATION='Bearer ' + self.token,
+                         format='json')
+
+        view = InterventionsView.as_view({'get': 'list'})
+        response = self.client.get('/api/interventions/',
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertTrue(result['data'])
+        assert response.status_code == 200, response.content
+
+    def test_get_one_intervention(self):
+        view = InterventionsView.as_view({'post': 'create'})
+        response = self.client.post('/api/interventions/',
+                                    self.intervention_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        _details = json.loads(response.content.decode('utf-8'))
+        _object = _details['data']
+        _id = _object['id']
+
+        view = InterventionsView.as_view({'get': 'retrieve'})
+        response = self.client.get('/api/interventions/' + str(_id) + '/',
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertTrue(result['data'])
+        assert response.status_code == 200, response.content
+
+    def test_intervention_not_found(self):
+        view = InterventionsView.as_view({'get': 'retrieve'})
+        response = self.client.get('/api/interventions/20/',
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+
+        self.assertEqual(result['message'], 'Intervention with id 20 not found')
+        assert response.status_code == 404, response.content
