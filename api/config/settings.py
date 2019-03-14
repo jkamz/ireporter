@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'rest_framework_swagger',
     'incidents',
+    'interventions',
 ]
 
 # Rest Framework Settings
