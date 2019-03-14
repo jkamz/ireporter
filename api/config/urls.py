@@ -20,30 +20,34 @@ from django.conf.urls import include
 from rest_framework.schemas import get_schema_view
 from rest_framework.documentation import include_docs_urls
 from django.conf.urls.static import static
-from rest_framework_swagger.views import get_swagger_view
+from rest_framework_swagger import renderers
 
 from auth.views import AuthApiListView
 from utils.router import DefaultRouterWithAPIViews
-
-# swagger 
-swagger_view = get_swagger_view(title='iReporter_API')
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+from rest_framework.permissions import (
+    IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser, AllowAny
+)
 
 admin.site.site_header = settings.ADMIN_SITE_HEADER
 
 router = DefaultRouterWithAPIViews()
 router.register('api/auth', AuthApiListView)
 
-schema_view = get_schema_view(title=settings.API_BROWSER_HEADER, public=True)
-doc_urls = include_docs_urls(title=settings.API_BROWSER_HEADER)
+schema_view = get_schema_view(title=settings.API_BROWSER_HEADER, public=True, permission_classes=[AllowAny],
+renderer_classes = [
+        renderers.OpenAPIRenderer,
+        renderers.SwaggerUIRenderer
+    ], authentication_classes=[JSONWebTokenAuthentication])
+doc_urls = include_docs_urls(title=settings.API_BROWSER_HEADER, permission_classes=[AllowAny])
 api_browser_urls = include('rest_framework.urls')
 auth_urls = include('auth.urls')
 incident_urls = include('incidents.urls')
 
 urlpatterns = [
     path('api/', doc_urls),
-    path('api/ireporter/docs', swagger_view),
     path('api/auth/', auth_urls),
-    path('api/schema/', schema_view),
+    path('api/ireporter/docs/', schema_view),
     path('api/browser/', api_browser_urls),
     path('api/admin/', admin.site.urls),
     path('api/', incident_urls)
