@@ -7,6 +7,9 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from django.urls import reverse
 import json
+from file_utility.uploader import ImageUploader
+from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 class InterventionsTestsCase(TestCase):
@@ -93,7 +96,7 @@ class InterventionsTestsCase(TestCase):
             'title': 'Sample intervention title',
             'comment': 'Sample intervention comment',
             'location': '24.00, 45.006',
-            'Image': '',
+            'Image': [],
             'Video': ''
         }
 
@@ -101,9 +104,20 @@ class InterventionsTestsCase(TestCase):
             'title': 'Sample control title',
             'comment': 'Sample control comment',
             'location': '84.00, 124.00',
-            'Image': '',
+            'Image': [],
             'Video': ''
         }
+
+        self.draft_status = {
+            'title': 'This is the draft redflag',
+            'status': "draft",
+            'Image': '',
+            'Image': [],
+            'location' : '84.00, 124.00',
+            'Video': '',
+            'comment': 'This record has the status set to draft',
+            'incident_type': 'intervention'
+            }
 
         self.admin_login = {
             'username': 'admin@test.com',
@@ -122,7 +136,7 @@ class InterventionsTestsCase(TestCase):
             'title': 'intervention title',
             'comment': 'intervention comment',
             'location': '24.00, 45.006',
-            'Image': '',
+            'Image': [],
             'Video': '',
             'status': 'rejected'
         }
@@ -717,3 +731,54 @@ class InterventionsTestsCase(TestCase):
                                          format='json')
 
         self.assertEqual(self.response.status_code, status.HTTP_409_CONFLICT)
+    def test_creates_intervention_with_image_if_present(self):
+
+        image = SimpleUploadedFile(
+            "image2.jpg", b"file_content", content_type="image/jpeg")
+
+        self.draft_status.update({'image': image})
+
+        intervention = self.client.post('/api/interventions/', self.draft_status,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='multipart')
+
+        self.assertEqual(intervention.status_code, status.HTTP_201_CREATED)
+
+    def test_creates_intervention_if_image_not_present(self):
+
+        intervention = self.client.post('/api/interventions/', self.draft_status,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='multipart')
+
+        self.assertEqual(intervention.status_code, status.HTTP_201_CREATED)
+
+    def test_adds_multiple_images_to_intervention(self):
+
+        image = SimpleUploadedFile(
+            "image2.jpg", b"file_content", content_type="image/jpeg")
+
+        self.draft_status.update({'image': image})
+
+        response = self.client.post('/api/interventions/', self.draft_status,
+                                HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                format='multipart')
+
+        flag_id = response.data['data']['id']
+
+        self.draft_status.update({'image': image})
+
+        intervention = self.client.patch('/api/interventions/' + str(flag_id) + '/', self.draft_status,
+                                HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                format='multipart')
+
+        self.assertEqual(intervention.status_code, 200)
+
+    def test_raises_not_found_if_record_missing(self):
+
+        response = self.client.patch(
+            "/api/interventions/1000/",
+            self.draft_status,
+            format="multipart",
+            HTTP_AUTHORIZATION='Bearer ' + self.token)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

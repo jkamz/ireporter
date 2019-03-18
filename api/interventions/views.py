@@ -19,6 +19,9 @@ import smtplib
 from django.conf import settings
 from incidents.views import send_email
 record_type = "Intervention"
+from file_utility.uploader import ImageUploader
+from django.contrib.postgres.fields import ArrayField
+import json
 
 
 class InterventionsView(viewsets.ModelViewSet):
@@ -60,17 +63,10 @@ class InterventionsView(viewsets.ModelViewSet):
                  "message": "This Intervention record comment exists"},
                 status=409)
         else:
-            return self.create_intervention(request)
-
-    def create_intervention(self, request):
-        response = super().create(request)
-        response.data = {
-            'status': 201,
-            'data': response.data,
-        }
-        return response
+            return self.upload_image(request)
 
     def create(self, request):
+        request.POST._mutable = True
         request.data['createdBy'] = request.user.id
         return self.validate_record(request)
 
@@ -114,6 +110,7 @@ class InterventionsView(viewsets.ModelViewSet):
         return JsonResponse({"status": 200,
                              "data": serializer.data},
                             status=200)
+
 
     @action(methods=['patch'], detail=True, permission_classes=[IsAdminUser],
             url_path='status', url_name='change_status')
@@ -216,11 +213,13 @@ class InterventionsView(viewsets.ModelViewSet):
 
         return Response(data=response, status=response['status'])
 
-    def update(self, request, pk=None):
+    def update(self, request, pk=None, *args, **kwargs):
         """
         put:
         user edit an intervention
         """
+
+        request.POST._mutable = True
         try:
             intervention = InterventionsModel.objects.filter(id=pk)[0]
         except:
@@ -239,17 +238,85 @@ class InterventionsView(viewsets.ModelViewSet):
         request.data['createdBy'] = serializer.data['createdBy']
 
         if intervention.status.lower() == 'draft':
-            serializer = InterventionSerializer(intervention,
-                                                data=request.data,
-                                                context={'request': request})
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return JsonResponse({"status": 200,
-                                 "data": serializer.data},
-                                status=200)
+            request.data['id'] = intervention.id
+            return self.upload_image(request)
+
         return JsonResponse(
             {"status": 403,
              "message":
              ("You cannot edit the intervention since its "
               "status is: {}".format(intervention.status))},
             status=403)
+
+    def upload_image(self, request, pk=None, *args, **kwargs):
+        
+        file_exists = request.FILES.get('file', False)
+        id_exists = request.data.get('id', False)
+
+        status = 0
+        if request.method == 'POST':
+            status = 201
+        else:
+            status = 200
+
+        try:
+            if id_exists:
+                try:
+                    intervention = InterventionsModel.objects.filter(id=int(request.data['id']))[0]
+                    if file_exists:
+                        if request.FILES['file'] is not None:
+                            image = ImageUploader(request.FILES['file'])
+                            if image is not None:
+                                uploaded_image_url = image.get('secure_url', request.FILES['file'])
+                                saved_images = intervention.Image
+                                serializer = InterventionSerializer(intervention,
+                                                    data=request.data,
+                                                    context={'request': request})
+                                serializer.is_valid(raise_exception=True)
+                                saved_images.append(uploaded_image_url)
+                                serializer.validated_data['Image'] = saved_images
+                                serializer.save()
+                                return Response({"status" : status,
+                                    "data": serializer.data},
+                                    status=status)
+                            else:
+                                serializer = InterventionSerializer(intervention,
+                                                    data=request.data,
+                                                    context={'request': request})
+                                serializer.is_valid(raise_exception=True)
+                                serializer.save()
+                                return Response({"status" : status,
+                                    "data": serializer.data},
+                                    status=status)
+                    else:
+                        serializer = InterventionSerializer(intervention,
+                                                    data=request.data,
+                                                    context={'request': request})
+                        serializer.is_valid(raise_exception=True)
+                        serializer.save()
+                        return Response({"status" : status,
+                            "data": serializer.data},
+                            status=status)
+                except Http404:
+                    return JsonResponse({"status": 404,
+                                    "message": "Intervention with id {} not found".format(request.data['id'])},
+                                    status=404)
+
+            else:
+                if file_exists:
+                        response = super().create(request)
+                        request.data['id'] = response.data['id']
+                        return self.upload_image(request)
+                else:
+                    response = super().create(request)
+                    response.data = {
+                        'status': status,
+                        'data': response.data,
+                    }
+                    return response
+        except Exception as e:
+            return JsonResponse(
+                {"status" : e.status_code,
+                    "error": e.__dict__},
+                status = e.status_code,
+                safe = False)

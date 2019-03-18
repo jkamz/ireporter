@@ -62,6 +62,9 @@ db.sqlite3
 # Scrapy stuff:
 .scrapy
 
+# bashrc
+.bashrc
+
 # Sphinx documentation
 docs/_build/
 
