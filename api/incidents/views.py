@@ -68,7 +68,12 @@ class RedflagView(viewsets.ModelViewSet):
         try:
             instance = self.get_object()
 
-            if int(instance.createdBy) != user_id:
+            if not 'draft' in instance.status.lower():
+
+                response['status'], response['error'] = 403, 'This record is {}. You can not delete it.'.format(
+                    instance.status.lower())
+
+            elif int(instance.createdBy) != user_id:
 
                 response['status'], response['error'] = 403, 'You can not delete a redflag you do not own'
 
@@ -82,7 +87,7 @@ class RedflagView(viewsets.ModelViewSet):
             response['status'], response['error'] = 404, 'Redflag record could not be found'
 
         return Response(data=response, status=response['status'])
-        
+
     def user_name(self, uid):
         user = User.objects.filter(id=uid)[0]
         return user.username
@@ -101,7 +106,7 @@ class RedflagView(viewsets.ModelViewSet):
             dictionary = dict(redflag)
             dictionary['createdBy'] = self.user_name(dictionary['createdBy'])
             data.append(dictionary)
-            
+
         return JsonResponse({"status": 200,
                              "data": data},
                             status=200)

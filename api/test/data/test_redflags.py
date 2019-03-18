@@ -42,6 +42,26 @@ class RedflagCaseTest(TestCase):
             'location': 'Narok'
         }
 
+        self.draft_status = {
+            'title': 'This is the draft redflag',
+            'status': "draft",
+            'Image': '',
+            'Video': '',
+            'comment': 'This record has the status set to draft',
+            'incident_type': 'red-flag',
+            'location': 'Narok'
+        }
+
+        self.processed_status = {
+            'title': 'This is the resolved redflag',
+            'status': "resolved",
+            'Image': '',
+            'Video': '',
+            'comment': 'This record has been resolved',
+            'incident_type': 'red-flag',
+            'location': 'Narok'
+        }
+
         self.control_user_data = {
             "first_name": 'Jim',
             "other_name": 'Powel',
@@ -204,7 +224,7 @@ class RedflagCaseTest(TestCase):
         user owns an existing redflag record
         """
 
-        new_incident = self.client.post('/api/redflags/', self.incident_data,
+        new_incident = self.client.post('/api/redflags/', self.draft_status,
                                         HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
 
         flag_id = new_incident.data['data']['id']
@@ -229,7 +249,7 @@ class RedflagCaseTest(TestCase):
         the record
         """
 
-        new_incident = self.client.post('/api/redflags/', self.incident_data,
+        new_incident = self.client.post('/api/redflags/', self.draft_status,
                                         HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
 
         flag_id = new_incident.data['data']['id']
@@ -240,7 +260,26 @@ class RedflagCaseTest(TestCase):
             '/api/redflags/{}/'.format(flag_id), HTTP_AUTHORIZATION='Bearer ' + self.control_token)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        
+
+    def test_raises_error_if_record_is_processed(self):
+        """
+        Test for failure to delete if the status
+        of the record is 'under investigation' or
+        'resolved' or 'rejected'.
+        """
+
+        new_incident = self.client.post('/api/redflags/', self.processed_status,
+                                        HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
+
+        flag_id = new_incident.data['data']['id']
+
+        self.assertEqual(new_incident.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.delete(
+            '/api/redflags/{}/'.format(flag_id), HTTP_AUTHORIZATION='Bearer ' + self.token)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_get_all_redlfags(self):
         view = RedflagView.as_view({'post': 'create'})
         self.client.post('/api/redflags/',
@@ -284,4 +323,3 @@ class RedflagCaseTest(TestCase):
 
         self.assertEqual(result['message'], 'Redflag with id 20 not found')
         assert response.status_code == 404, response.content
-
