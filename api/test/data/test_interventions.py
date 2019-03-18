@@ -1,4 +1,5 @@
 from django.test import TestCase
+from users.models import User
 from interventions.models import InterventionsModel
 from interventions.views import InterventionsView
 
@@ -16,6 +17,13 @@ class InterventionsTestsCase(TestCase):
         self.client = APIClient()
         self.login_url = reverse('user_login')
 
+        self.adminuser = User.objects.create_user(
+            'admin@test.com', 'rootpassword')
+        self.adminuser.save()
+        self.adminuser.is_superuser = True
+        self.adminuser.is_staff = True
+        self.adminuser.save()
+
         self.user_data = {
             "first_name": 'Adeline',
             "other_name": 'Ranger',
@@ -24,6 +32,15 @@ class InterventionsTestsCase(TestCase):
             "username": 'Ranger',
             "mobile_number": '+254701020304',
             "password": 'adminPassw0rd'
+        }
+
+        self.admin_update_data = {
+            "title": "Title update by Admin",
+            "status": "resolved"
+        }
+
+        self.admin_incorrect_status = {
+            "status": "Accepted"
         }
 
         self.valid_login_data = {
@@ -39,7 +56,40 @@ class InterventionsTestsCase(TestCase):
             'Video': ''
         }
 
+        self.control_intervention_data = {
+            'title': 'Sample control title',
+            'comment': 'Sample control comment',
+            'location': '84.00, 124.00',
+            'Image': '',
+            'Video': ''
+        }
+
+        self.admin_login = {
+            'username': 'admin@test.com',
+            'password': 'rootpassword'
+        }
+
+        self.admin_control = self.client.post(
+            self.login_url,
+            data=self.admin_login,
+            format="json"
+        )
+
+        self.admin_token = self.admin_control.data['token']
+
         self.token = self.activate_account_and_login()
+
+        self.intervention_record = self.create_intervention_record(
+            data=self.control_intervention_data)
+
+        self.flag_id, self.flag_title, self.flag_comment = (
+            self.intervention_record.data['data']['id'],
+            self.intervention_record.data['data']['title'],
+            self.intervention_record.data['data']['comment']
+        )
+
+        self.update_status_url = '/api/interventions/{}/status/'.format(
+            self.flag_id)
 
     def signup_user_and_fetch_details(self, data=''):
         """
@@ -89,6 +139,45 @@ class InterventionsTestsCase(TestCase):
         )
 
         return self.response.data['token']
+
+    def update_intervention_status(self, url="", data='', token=''):
+        """
+        Updates the status of a intervention record
+        """
+
+        if not token:
+            token = self.token
+
+        if not data:
+            data = self.admin_update_data
+
+        response = self.client.patch(
+            url, data=data,
+            format="json",
+            HTTP_AUTHORIZATION='Bearer ' + token
+        )
+
+        return response
+
+    def create_intervention_record(self, url='', data='', token=''):
+        """
+        Creates an intervention record with provided data
+        """
+
+        if not token:
+            token = self.token
+
+        if not data:
+            data = self.intervention_data
+
+        if not url:
+            url = '/api/interventions/'
+
+        response = self.client.post(url, data,
+                                    HTTP_AUTHORIZATION='Bearer ' + token,
+                                    format='json')
+
+        return response
 
     def test_can_create_intervention(self):
         """test that can create intervention record"""
@@ -209,7 +298,7 @@ class InterventionsTestsCase(TestCase):
 
         self.assertEqual(self.response.status_code,
                          status.HTTP_400_BAD_REQUEST)
-    
+
     def test_get_all_interventions(self):
         view = InterventionsView.as_view({'post': 'create'})
         self.client.post('/api/interventions/',
@@ -252,6 +341,87 @@ class InterventionsTestsCase(TestCase):
                                    format='json')
         result = json.loads(response.content.decode('utf-8'))
 
-
-        self.assertEqual(result['message'], 'Intervention with id 20 not found')
+        self.assertEqual(result['message'],
+                         'Intervention with id 20 not found')
         assert response.status_code == 404, response.content
+
+    def test_updates_status_if_correct_details(self):
+        """
+        Tests for successful update of status if
+        correct value provided for status and
+        user is admin
+        """
+
+        intervention_update = self.update_intervention_status(
+            self.update_status_url,
+            data=self.admin_update_data,
+            token=self.admin_token)
+
+        self.assertEqual(intervention_update.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(
+            intervention_update.data['data']['status'],
+            self.admin_update_data['status'])
+
+        self.assertEqual(
+            intervention_update.data['data']['title'], self.flag_title)
+
+        self.assertEqual(
+            intervention_update.data['data']['comment'], self.flag_comment)
+
+    def test_raises_bad_request_if_status_key_missing(self):
+        """
+        Test for failure to update if the 'status' key and value
+        is not provided
+        """
+
+        intervention_update = self.update_intervention_status(
+            self.update_status_url,
+            data={"title": "intervention title"},
+            token=self.admin_token
+        )
+
+        self.assertEqual(intervention_update.status_code,
+                         status.HTTP_400_BAD_REQUEST)
+
+    def test_raises_bad_request_if_invalid_status_value(self):
+        """
+        Tests for failure to update if an invalid value
+        is provided for the 'status'
+        """
+
+        intervention_update = self.update_intervention_status(
+            self.update_status_url,
+            data=self.admin_incorrect_status,
+            token=self.admin_token
+        )
+
+        self.assertEqual(intervention_update.status_code,
+                         status.HTTP_400_BAD_REQUEST)
+
+    def test_raises_error_if_not_admin_user(self):
+        """
+        Tests for failure to update if the user
+        is not an 'Admin'.
+        """
+
+        intervention_update = self.update_intervention_status(
+            self.update_status_url, data=self.admin_update_data)
+
+        self.assertEqual(intervention_update.status_code,
+                         status.HTTP_403_FORBIDDEN)
+
+    def test_raises_not_found_if_record_missing(self):
+        """
+        Test for failure to update intervention if the
+        record does not exist
+        """
+
+        intervention_update = self.update_intervention_status(
+            url='/api/interventions/100000/status/',
+            data=self.admin_update_data,
+            token=self.admin_token
+        )
+
+        self.assertEqual(intervention_update.status_code,
+                         status.HTTP_404_NOT_FOUND)
