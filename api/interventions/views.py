@@ -113,6 +113,8 @@ class InterventionsView(viewsets.ModelViewSet):
 
     @action(methods=['patch'], detail=True, permission_classes=[IsAdminUser],
             url_path='status', url_name='change_status')
+
+
     def update_status(self, request, pk=None):
         """
         patch:
@@ -207,3 +209,40 @@ class InterventionsView(viewsets.ModelViewSet):
                 'Intervention record could not be found'
 
         return Response(data=response, status=response['status'])
+
+    def update(self, request, pk=None):
+        """
+        put:
+        user edit an intervention
+        """
+        try:
+            intervention = InterventionsModel.objects.filter(id=pk)[0]
+        except:
+            return JsonResponse(
+                {"status": 404,
+                 "message": "Intervention with id {} not found".format(pk)},
+                status=404)
+        serializer = InterventionSerializer(intervention,
+                                            context={'request': request})
+
+        if int(request.user.id) != int(serializer.data['createdBy']):
+            return JsonResponse(
+                {"status": 403,
+                 "message": "You cannot edit an intervention you do not own"},
+                status=403)
+        request.data['createdBy'] = serializer.data['createdBy']
+
+        if intervention.status.lower() == 'draft':
+            serializer = InterventionSerializer(intervention,
+                                                data=request.data,
+                                                context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return JsonResponse({"status": 200,
+                                 "data": serializer.data},
+                                status=200)
+        return JsonResponse(
+            {"status": 403,
+             "message":
+             "You cannot edit the intervention since its status is: {}".format(intervention.status)},
+            status=403)

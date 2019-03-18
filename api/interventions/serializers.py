@@ -27,6 +27,8 @@ class InterventionSerializer(serializers.ModelSerializer):
             'comment',
             'createdOn')
 
+        read_only_fields = ['status',]
+
     def create(self, validated_data):
         intervention = TABLE.objects.create(**validated_data)
         return intervention
