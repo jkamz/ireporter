@@ -16,6 +16,7 @@ class InterventionSerializer(serializers.ModelSerializer):
         model = TABLE
         fields = (
             'id',
+            'url',
             'createdBy',
             'title',
             'incident_type',

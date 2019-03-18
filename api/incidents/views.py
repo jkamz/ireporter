@@ -34,6 +34,8 @@ class RedflagView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def validate_record(self, request):
+        """Checks if redlag record exists """
+        
         records = RedflagModel.objects.filter(
             createdBy=request.data['createdBy'])
         duplicate_record = records.filter(
