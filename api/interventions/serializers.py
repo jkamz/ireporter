@@ -45,7 +45,7 @@ class InterventionSerializer(serializers.ModelSerializer):
                 "message": "Please user a valid lat and long "
                 "coordinates separated by comma"
 
-                })
+            })
 
         if re.match(
                 r"^[!@#$%^&*()_-]+$", data['title']):
@@ -53,7 +53,7 @@ class InterventionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "message": "A title cannot contain only special chars"
 
-                })
+            })
 
         if re.match(
                 r"^[!@#$%^&*()_-]+$", data['comment']):
@@ -61,6 +61,23 @@ class InterventionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "message": "A comment cannot contain only special chars"
 
-                })
+            })
 
         return data
+
+
+class AdminInterventionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TABLE
+        fields = (
+            'id',
+            'url',
+            'createdBy',
+            'title',
+            'incident_type',
+            'location',
+            'status',
+            'Image',
+            'Video',
+            'comment',
+            'createdOn')

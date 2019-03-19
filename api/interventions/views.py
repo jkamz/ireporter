@@ -1,12 +1,17 @@
 from django.shortcuts import render
 from rest_framework import generics, permissions, status, views, viewsets
 from rest_framework.response import Response
-from .serializers import InterventionSerializer, TABLE
+from rest_framework.decorators import action
+from .serializers import (
+    InterventionSerializer, TABLE, AdminInterventionSerializer
+
+)
 from django.contrib.auth.models import User
 from users.models import User
 from .models import InterventionsModel
 from rest_framework.permissions import (
     IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser, AllowAny
+
 )
 from django.http import JsonResponse
 from django.http.response import Http404
@@ -76,14 +81,14 @@ class InterventionsView(viewsets.ModelViewSet):
         """
         queryset = self.queryset
         serializer = InterventionSerializer(queryset, many=True,
-                                        context={'request': request})
+                                            context={'request': request})
         dictionary = None
         data = []
         for redflag in serializer.data:
             dictionary = dict(redflag)
             dictionary['createdBy'] = self.user_name(dictionary['createdBy'])
             data.append(dictionary)
-            
+
         return JsonResponse({"status": 200,
                              "data": data},
                             status=200)
@@ -101,7 +106,69 @@ class InterventionsView(viewsets.ModelViewSet):
                                 status=404)
         intervention.createdBy = self.user_name(intervention.createdBy)
         serializer = InterventionSerializer(intervention,
-                                        context={'request': request})
+                                            context={'request': request})
         return JsonResponse({"status": 200,
                              "data": serializer.data},
                             status=200)
+
+    @action(methods=['patch'], detail=True, permission_classes=[IsAdminUser],
+            url_path='status', url_name='change_status')
+    def update_status(self, request, pk=None):
+        """
+        patch:
+        Update an Intervention Status
+        """
+
+        response, data, options = (
+            {}, {}, ['draft', 'under investigation', 'resolved', 'rejected',
+                     'Draft', 'Under Investigation', 'Resolved', 'Rejected']
+        )
+
+        try:
+            intervention = self.get_object()
+
+            try:
+                status_data = request.data['status'].strip()
+
+                if status_data in options:
+
+                    data['status'] = status_data.lower()
+
+                    updated_intervention = (
+                        AdminInterventionSerializer(intervention,
+                                                    data=data,
+                                                    partial=True,
+                                                    context={
+                                                        'request': request}
+                                                    )
+                    )
+
+                    updated_intervention.is_valid(raise_exception=True)
+
+                    self.perform_update(updated_intervention)
+
+                    response_data = updated_intervention.data
+
+                    response_data['createdBy'] = self.user_name(
+                        updated_intervention.data['createdBy'])
+
+                    response['data'], response['status'] = response_data, 200
+
+                else:
+
+                    response['error'], response['status'] = (
+                        "'status' field may only be either {}".format(
+                            ' or '.join(options[:4])), 400)
+
+            except KeyError:
+
+                response['error'], response['status'] = {
+                    "status": "This field is required."}, 400
+
+        except Http404:
+
+            response['error'], response['status'] = (
+                "Intervention record with ID '{}' does not exist".format(
+                    pk), 404)
+
+        return Response(data=response, status=response['status'])
