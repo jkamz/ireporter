@@ -34,6 +34,47 @@ class InterventionsTestsCase(TestCase):
             "password": 'adminPassw0rd'
         }
 
+        # signup and login another user
+        self.control_user_data = {
+            "first_name": 'Jim',
+            "other_name": 'Powel',
+            "last_name": 'Goethe',
+            "email": 'testers@gmail.com',
+            "username": 'Powel',
+            "mobile_number": '+254701020305',
+            "password": 'adminPassw0rd'
+        }
+
+        self.control_user = self.client.post(
+            reverse('user_signup'),
+            self.control_user_data,
+            format="json"
+        )
+
+        self.activation_data = {
+            "uid": self.control_user.data['id'],
+            "token": self.control_user.data['token']
+        }
+
+        activation = self.client.post(
+            reverse('user_activate'),
+            self.activation_data,
+            format="json"
+        )
+
+        self.control_login = {
+            'username': 'testers@gmail.com',
+            'password': 'adminPassw0rd'
+        }
+
+        self.login_control = self.client.post(
+            self.login_url,
+            data=self.control_login,
+            format="json"
+        )
+
+        self.control_token = self.login_control.data['token']
+
         self.admin_update_data = {
             "title": "Title update by Admin",
             "status": "resolved"
@@ -425,3 +466,77 @@ class InterventionsTestsCase(TestCase):
 
         self.assertEqual(intervention_update.status_code,
                          status.HTTP_404_NOT_FOUND)
+
+    def test_deletes_intervention_if_correct_details(self):
+        """
+        Tests for successful deletion of intervention record if
+        user owns the existing intervention record
+        """
+
+        new_intervention = self.client.post('/api/interventions/',
+                                            self.intervention_data,
+                                            HTTP_AUTHORIZATION='Bearer ' +
+                                            self.token, format='json')
+
+        id = new_intervention.data['data']['id']
+
+        self.response = self.client.delete('/api/interventions/{}/'.format(id),
+                                           HTTP_AUTHORIZATION='Bearer ' +
+                                           self.token,
+                                           format='json')
+        self.assertEqual(self.response.status_code,
+                         status.HTTP_200_OK)
+
+    def test_raises_error_on_nonexistent_record(self):
+        """
+        Test for error message if user tries to delete non existent record
+        """
+        self.response = self.client.delete('/api/interventions/9000/',
+                                           HTTP_AUTHORIZATION='Bearer ' +
+                                           self.token,
+                                           format='json')
+        self.assertEqual(self.response.status_code,
+                         status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_delete_if_not_owner(self):
+        """
+        Test that a user cannot delete other peoples records
+        """
+        new_intervention = self.client.post('/api/interventions/',
+                                            self.intervention_data,
+                                            HTTP_AUTHORIZATION='Bearer ' +
+                                            self.token, format='json')
+
+        id = new_intervention.data['data']['id']
+
+        self.response = self.client.delete('/api/interventions/{}/'.format(id),
+                                           HTTP_AUTHORIZATION='Bearer ' +
+                                           self.control_token,
+                                           format='json')
+        self.assertEqual(self.response.status_code,
+                         status.HTTP_403_FORBIDDEN)
+
+    def test_cannot_delete_if_status_is_changed(self):
+        """
+        Test that a user cannot delete their records if
+        admin has changed their status to either resolved,
+        rejected or under investigation
+        """
+        new_intervention = self.client.post('/api/interventions/',
+                                            self.intervention_data,
+                                            HTTP_AUTHORIZATION='Bearer ' +
+                                            self.token, format='json')
+
+        id = new_intervention.data['data']['id']
+
+        self.update_intervention_status(
+            '/api/interventions/{}/status/'.format(id),
+            data=self.admin_update_data,
+            token=self.admin_token)
+
+        self.response = self.client.delete('/api/interventions/{}/'.format(id),
+                                           HTTP_AUTHORIZATION='Bearer ' +
+                                           self.token,
+                                           format='json')
+        self.assertEqual(self.response.status_code,
+                         status.HTTP_403_FORBIDDEN)

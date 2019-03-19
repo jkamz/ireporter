@@ -172,3 +172,38 @@ class InterventionsView(viewsets.ModelViewSet):
                     pk), 404)
 
         return Response(data=response, status=response['status'])
+
+    def destroy(self, request, **kwargs):
+        """
+        This methods tries to delete an intevention
+        when the user owns it, also, return error message
+        when status is changed or user doesn't own it
+        """
+
+        user_id, response = request.user.id, {}
+
+        try:
+            instance = self.get_object()
+
+            if int(instance.createdBy) != user_id:
+
+                response['status'], response['error'] = 403, \
+                    'You can not delete an intervention record you do not own'
+
+            elif str.lower(instance.status) != str.lower('draft'):
+                response['status'], response['error'] = 403, \
+                    'You can not delete this intervention, it is already '\
+                    + instance.status
+
+            else:
+                self.perform_destroy(instance)
+
+                response['status'], response['message'] = 200, \
+                    'Intervention record successfully deleted'
+
+        except Http404:
+
+            response['status'], response['error'] = 404, \
+                'Intervention record could not be found'
+
+        return Response(data=response, status=response['status'])
