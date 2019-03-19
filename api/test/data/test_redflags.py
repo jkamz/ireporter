@@ -17,6 +17,26 @@ class RedflagCaseTest(TestCase):
         self.client = APIClient()
         self.login_url = reverse('user_login')
 
+        self.adminuser = User.objects.create_user(
+            'admin@test.com', 'rootpassword')
+        self.adminuser.save()
+        self.adminuser.is_superuser = True
+        self.adminuser.is_staff = True
+        self.adminuser.save()
+
+        self.admin_login = {
+            'username': 'admin@test.com',
+            'password': 'rootpassword'
+        }
+
+        self.admin_control = self.client.post(
+            self.login_url,
+            data=self.admin_login,
+            format="json"
+        )
+
+        self.admin_token = self.admin_control.data['token']
+
         self.user_data = {
             "first_name": 'Adeline',
             "other_name": 'Ranger',
@@ -72,6 +92,15 @@ class RedflagCaseTest(TestCase):
             "password": 'adminPassw0rd'
         }
 
+        self.admin_update_data = {
+            "title": "Title update by Admin",
+            "status": "resolved"
+        }
+
+        self.admin_incorrect_status = {
+            "status": "Accepted"
+        }
+
         self.token = self.activate_account_and_login()
 
         self.control_user = self.client.post(
@@ -111,7 +140,8 @@ class RedflagCaseTest(TestCase):
         This method signs up a user and returns
         user id and the token
         """
-        data = self.user_data
+        if not data:
+            data = self.user_data
 
         self.response = self.client.post(
             reverse('user_signup'),
@@ -131,19 +161,17 @@ class RedflagCaseTest(TestCase):
         a user to the system
         """
 
-        data = self.signup_user_and_fetch_details()
-
-        self.activation_data = {
-            "uid": data[0],
-            "token": data[1]
-        }
-
         if not activate_data:
+            data = self.signup_user_and_fetch_details()
+            self.activation_data = {
+                "uid": data[0],
+                "token": data[1]
+            }
             activate_data = self.activation_data
 
         self.client.post(
             reverse('user_activate'),
-            self.activation_data,
+            activate_data,
             format="json"
         )
 
@@ -154,6 +182,25 @@ class RedflagCaseTest(TestCase):
         )
 
         return self.response.data['token']
+
+    def update_redflag_status(self, url="", data='', token=''):
+        """
+        Updates the status of a redflag record
+        """
+
+        if not token:
+            token = self.token
+
+        if not data:
+            data = self.admin_update_data
+
+        response = self.client.patch(
+            url, data=data,
+            format="json",
+            HTTP_AUTHORIZATION='Bearer ' + token
+        )
+
+        return response
 
     def delete_redflag(self, url='/api/redflags/redflag-id/'):
         """ Deletes a redflag record """
@@ -180,14 +227,15 @@ class RedflagCaseTest(TestCase):
 
         assert response.status_code == 400, response.rendered_content
 
-    def test_requires_status(self):
+    def test_default_status(self):
         new_incident = self.incident_data
-        new_incident.update({'status': ''})
+        new_incident.update({'status': 'another thing'})
         response = self.client.post('/api/redflags/', new_incident,
                                     HTTP_AUTHORIZATION='Bearer ' + self.token,
                                     format='json')
+        result = json.loads(response.content.decode('utf-8'))
 
-        assert response.status_code == 400, response.rendered_content
+        self.assertEqual(result['data']['status'], 'draft')
 
     def test_requires_comment(self):
         new_incident = self.incident_data
@@ -271,12 +319,22 @@ class RedflagCaseTest(TestCase):
         new_incident = self.client.post('/api/redflags/', self.processed_status,
                                         HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
 
-        flag_id = new_incident.data['data']['id']
+        flag_url = new_incident.data['data']['url']
 
         self.assertEqual(new_incident.status_code, status.HTTP_201_CREATED)
 
+        admin_login = self.client.post(self.login_url,
+                                       data=self.admin_login,
+                                       format='json')
+        token = admin_login.data['token']
+
+        redflag_update = self.update_redflag_status(
+            flag_url+'status/',
+            data=self.admin_update_data,
+            token=token)
+
         response = self.client.delete(
-            '/api/redflags/{}/'.format(flag_id), HTTP_AUTHORIZATION='Bearer ' + self.token)
+            flag_url, HTTP_AUTHORIZATION='Bearer ' + self.token)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -398,6 +456,16 @@ class RedflagCaseTest(TestCase):
         redflag_data = json.loads(response.content.decode('utf-8'))
         incident_url = redflag_data['data']['url']
 
+        admin_login = self.client.post(self.login_url,
+                                       data=self.admin_login,
+                                       format='json')
+        token = admin_login.data['token']
+
+        redflag_update = self.update_redflag_status(
+            incident_url+'status/',
+            data=self.admin_update_data,
+            token=token)
+
         # update redflag
         view = RedflagView.as_view({'put': 'update'})
         update_data = self.incident_data
@@ -406,3 +474,94 @@ class RedflagCaseTest(TestCase):
             incident_url, update_data, HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_updates_redflag_status_if_correct_details(self):
+        """
+        Tests for successful update of status if
+        correct value provided for status and
+        user is admin
+        """
+
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = flag_details['data']['url']
+
+        admin_login = self.client.post(self.login_url,
+                                       data=self.admin_login,
+                                       format='json')
+        token = admin_login.data['token']
+
+        redflag_update = self.update_redflag_status(
+            flag_url+'status/',
+            data=self.admin_update_data,
+            token=token)
+
+        self.assertEqual(redflag_update.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(
+            redflag_update.data['data']['status'],
+            self.admin_update_data['status'])
+
+        self.assertEqual(
+            redflag_update.data['data']['title'], self.incident_data['title'])
+
+        self.assertEqual(
+            redflag_update.data['data']['comment'], self.incident_data['comment'])
+
+    def test_raises_bad_request_if_status_key_missing(self):
+        """
+        Test for failure when admin tries to update
+        if the 'status' key and value is not provided
+        """
+
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = flag_details['data']['url']
+
+        admin_login = self.client.post(self.login_url,
+                                       data=self.admin_login,
+                                       format='json')
+        token = admin_login.data['token']
+
+        redflag_update = self.update_redflag_status(
+            url=flag_url+'status/',
+            data={"title": "redflag title"},
+            token=token)
+
+        self.assertEqual(redflag_update.status_code,
+                         status.HTTP_400_BAD_REQUEST)
+
+    def test_raises_bad_request_if_invalid_status_value(self):
+        """
+        Tests for failure to update by admin if an invalid value
+        is provided for the 'status'
+        """
+
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = flag_details['data']['url']
+
+        admin_login = self.client.post(self.login_url,
+                                       data=self.admin_login,
+                                       format='json')
+        token = admin_login.data['token']
+
+        redflag_update = self.update_redflag_status(
+            url=flag_url+'status/',
+            data={"status": "invalid status"},
+            token=token)
+
+        self.assertEqual(redflag_update.status_code,
+                         status.HTTP_400_BAD_REQUEST)
