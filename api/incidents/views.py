@@ -10,6 +10,7 @@ from rest_framework.permissions import (
     IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser, AllowAny
 )
 from django.http import JsonResponse
+from django.core.files.storage import FileSystemStorage
 import json
 
 from django.http.response import Http404
@@ -34,6 +35,22 @@ class RedflagView(viewsets.ModelViewSet):
     serializer_class = IncidentSerializer
     permission_classes = [IsAuthenticated]
 
+    def upload_image(self, request):
+        """
+        Uploads an image
+        """
+
+        image, file_storage = (
+            request.FILES['image'],
+            FileSystemStorage()
+        )
+
+        file_name = file_storage.save(image.name, image)
+
+        uploaded_image_url = file_storage.url(file_name)
+
+        return uploaded_image_url
+
     def validate_record(self, request):
         """Checks if redlag record exists """
 
@@ -47,7 +64,30 @@ class RedflagView(viewsets.ModelViewSet):
                 {"status": 409,
                  "message": "record exists"},
                 status=409)
+
         else:
+            if 'image' in request.FILES.keys():
+
+                image = request.FILES['image'].name.lower()
+
+                if not (image.endswith(".jpg") or image.endswith(".png")):
+
+                    return Response(data={
+                        "error": "Ensure the file is in JPEG or PNG format",
+                        "status": 400}, status=status.HTTP_400_BAD_REQUEST)
+
+                image_url = self.upload_image(request)
+
+                if "media" not in image_url:
+
+                    return Response(data={
+                        "error": "Service unavailable. \
+                        Please try again later.",
+                        "status": 503
+                    }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+                request.data['Image'] = image_url
+
             return self.create_redflag_record(request)
 
     def create_redflag_record(self, request):
@@ -59,6 +99,7 @@ class RedflagView(viewsets.ModelViewSet):
         return response
 
     def create(self, request):
+        request.POST._mutable = True
         request.data['createdBy'] = request.user.id
         return self.validate_record(request)
 
@@ -150,7 +191,8 @@ class RedflagView(viewsets.ModelViewSet):
 
             request.data['createdBy'] = request.user.id
             request.data['status'] = instance.status
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data)
@@ -216,5 +258,71 @@ class RedflagView(viewsets.ModelViewSet):
             response['error'], response['status'] = (
                 "Intervention record with ID '{}' does not exist".format(
                     pk), 404)
+
+        return Response(data=response, status=response['status'])
+
+    @action(methods=['patch'], detail=True,
+            permission_classes=[IsAuthenticated],
+            url_path='addImage', url_name='add_images')
+    def add_images(self, request, pk=None, *args, **kwargs):
+        """
+        patch:
+        Add images to redflag record
+        """
+
+        user_id, data, response = request.user.id, {}, {}
+
+        try:
+            record = self.get_object()
+
+            saved_images = record.Image
+
+            if 'image' in request.FILES.keys():
+
+                if int(record.createdBy) == user_id:
+
+                    uploaded_image_url = self.upload_image(request)
+
+                    saved_images.append(uploaded_image_url)
+
+                    data['Image'] = saved_images
+
+                    updated_flag = (
+                        IncidentSerializer(record,
+                                           data=data,
+                                           partial=True,
+                                           context={
+                                               'request': request}
+                                           )
+                    )
+
+                    updated_flag.is_valid(raise_exception=True)
+
+                    self.perform_update(updated_flag)
+
+                    response['data'], response['status'] = (
+                        updated_flag.data, 200
+                    )
+
+                    response['message'] = 'Image added to red-flag record'
+
+                else:
+
+                    response['error'], response['status'] = (
+                        "You can not update a record you do not own",
+                        403
+                    )
+
+            else:
+                response['error'], response['status'] = (
+                    {"image": "This field is required."}, 400
+                )
+
+        except Http404:
+
+            response['error'], response['status'] = (
+                "Redflag record with ID '{}' does not exist".format(pk),
+                404
+            )
 
         return Response(data=response, status=response['status'])
