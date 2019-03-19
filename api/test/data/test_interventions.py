@@ -118,6 +118,15 @@ class InterventionsTestsCase(TestCase):
 
         self.admin_token = self.admin_control.data['token']
 
+        self.intervention_data_2 = {
+            'title': 'intervention title',
+            'comment': 'intervention comment',
+            'location': '24.00, 45.006',
+            'Image': '',
+            'Video': '',
+            'status': 'rejected'
+        }
+
         self.token = self.activate_account_and_login()
 
         self.intervention_record = self.create_intervention_record(
@@ -137,7 +146,8 @@ class InterventionsTestsCase(TestCase):
         This method signs up a user and returns
         user id and the token
         """
-        data = self.user_data
+        if not data:
+            data = self.user_data
 
         self.response = self.client.post(
             reverse('user_signup'),
@@ -156,20 +166,17 @@ class InterventionsTestsCase(TestCase):
         data from signup and also tries to login
         a user to the system
         """
-
-        data = self.signup_user_and_fetch_details()
-
-        self.activation_data = {
-            "uid": data[0],
-            "token": data[1]
-        }
-
         if not activate_data:
+            data = self.signup_user_and_fetch_details()
+            self.activation_data = {
+                "uid": data[0],
+                "token": data[1]
+            }
             activate_data = self.activation_data
 
         self.client.post(
             reverse('user_activate'),
-            self.activation_data,
+            activate_data,
             format="json"
         )
 
@@ -540,3 +547,133 @@ class InterventionsTestsCase(TestCase):
                                            format='json')
         self.assertEqual(self.response.status_code,
                          status.HTTP_403_FORBIDDEN)
+    def test_update_an_intervention(self):
+        """
+        Test that a user can successfully update
+        their intervention record
+        """
+        view = InterventionsView.as_view({'post': 'create'})
+        response = self.client.post('/api/interventions/',
+                                    self.intervention_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = flag_details['data']['url']
+
+        view = InterventionsView.as_view({'put': 'update'})
+        data = self.intervention_data
+        data.update({'title': 'Another title'})
+        response = self.client.put(flag_url,
+                                   data,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertEqual(result['data']['title'], 'Another title')
+        assert response.status_code == 200, response.content
+
+    def test_only_owner_can_update_an_intervention(self):
+        """
+        Test that a user can only update
+        an intervention they have created
+        """
+        view = InterventionsView.as_view({'post': 'create'})
+        response = self.client.post('/api/interventions/',
+                                    self.intervention_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = flag_details['data']['url']
+
+        sign_up_data = {
+            "first_name": 'Adel',
+            "other_name": 'singer',
+            "last_name": 'leda',
+            "email": 'adele@gmail.com',
+            "username": 'Adele',
+            "mobile_number": '+254701020324',
+            "password": 'adminPassw0rd'}
+        sign_up_user = self.signup_user_and_fetch_details(data=sign_up_data)
+        activate_data = {'uid': sign_up_user[0], 'token': sign_up_user[1]}
+        self.activate_account_and_login(activate_data=activate_data)
+        self.response = self.client.post(self.login_url,
+                                         data={"username": 'adele@gmail.com',
+                                               "password": 'adminPassw0rd'},
+                                         format="json")
+        token = json.loads(self.response.content.decode('utf-8'))
+        token = token['token']
+
+        view = InterventionsView.as_view({'put': 'update'})
+        data = self.intervention_data
+        data.update({'title': 'A different title'})
+        response2 = self.client.put(flag_url,
+                                    data,
+                                    HTTP_AUTHORIZATION='Bearer ' + token,
+                                    format='json')
+        result = json.loads(response2.content.decode('utf-8'))
+
+        self.assertEqual(
+            result['message'],
+            'You cannot edit an intervention you do not own')
+        assert response2.status_code == 403, response2.content
+
+    def test_cannot_update_an_intervention_status(self):
+        """
+        Test that a user cannot update the status of
+        an intervention record
+        """
+        view = InterventionsView.as_view({'post': 'create'})
+        response = self.client.post('/api/interventions/',
+                                    self.intervention_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = flag_details['data']['url']
+
+        view = InterventionsView.as_view({'put': 'update'})
+        data = self.intervention_data_2
+        data.update({'status': 'approve please'})
+
+        response = self.client.put(flag_url,
+                                   data,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertEqual(
+            result['data']['status'],
+            'draft')
+
+    def test_cannot_update_an_intervention_if_status_not_draft(self):
+        """
+        Test that a user cannot update an intervention record
+        if the status has been changed by the admin
+        """
+        view = InterventionsView.as_view({'post': 'create'})
+        response = self.client.post('/api/interventions/',
+                                    self.intervention_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = flag_details['data']['url']
+
+        intervention_update = self.update_intervention_status(
+            flag_url+'status/',
+            data=self.admin_update_data,
+            token=self.admin_token)
+
+        view = InterventionsView.as_view({'put': 'update'})
+        data = self.intervention_data
+        data.update({'title': 'I got robbed!'})
+
+        response = self.client.put(flag_url,
+                                   data,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertEqual(
+            result['message'],
+            'You cannot edit the intervention since its status is: resolved')
+        assert response.status_code == 403
+
