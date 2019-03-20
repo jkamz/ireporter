@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics, permissions, status, views, viewsets
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from .serializers import IncidentSerializer, TABLE, AdminRedflagSerializer
 from django.contrib.auth.models import User
@@ -185,8 +186,17 @@ class RedflagView(viewsets.ModelViewSet):
         get:
         Get all redflags.
         """
+        page_limit = request.GET.get('limit')
+
+        if not page_limit or not page_limit.isdigit():
+            page_limit = 10
+
         queryset = self.queryset
-        serializer = IncidentSerializer(queryset, many=True,
+        paginator = PageNumberPagination()
+        paginator.page_size = page_limit
+        
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = IncidentSerializer(page, many=True,
                                         context={'request': request})
         dictionary = None
         data = []
@@ -195,9 +205,8 @@ class RedflagView(viewsets.ModelViewSet):
             dictionary['createdBy'] = RedflagView.user_name(dictionary['createdBy'])
             data.append(dictionary)
 
-        return JsonResponse({"status": 200,
-                             "data": data},
-                            status=200)
+        return paginator.get_paginated_response(data=data)
+
 
     def retrieve(self, request, pk=None):
         """
@@ -377,3 +386,4 @@ class RedflagView(viewsets.ModelViewSet):
     def user_email(uid):
         user = User.objects.filter(id=uid)[0]
         return user.email
+
