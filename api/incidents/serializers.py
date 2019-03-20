@@ -24,6 +24,26 @@ class IncidentSerializer(serializers.ModelSerializer):
             'comment',
             'createdOn')
 
+        read_only_fields = ['status',]
+
     def create(self, validated_data):
         incident = TABLE.objects.create(**validated_data)
         return incident
+
+
+class AdminRedflagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TABLE
+        fields = (
+            'id',
+            'url',
+            'createdBy',
+            'title',
+            'incident_type',
+            'location',
+            'status',
+            'Image',
+            'Video',
+            'comment',
+            'createdOn')
+

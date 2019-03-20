@@ -1,7 +1,8 @@
 from django.shortcuts import render
 from rest_framework import generics, permissions, status, views, viewsets
 from rest_framework.response import Response
-from .serializers import IncidentSerializer, TABLE
+from rest_framework.decorators import action
+from .serializers import IncidentSerializer, TABLE, AdminRedflagSerializer
 from django.contrib.auth.models import User
 from users.models import User
 from .models import RedflagModel
@@ -158,3 +159,62 @@ class RedflagView(viewsets.ModelViewSet):
             return JsonResponse({"status": 404,
                                  "message": "Redflag not found"},
                                 status=404)
+
+    @action(methods=['patch'], detail=True, permission_classes=[IsAdminUser],
+            url_path='status', url_name='change_status')
+    def update_status(self, request, pk=None):
+        """
+        patch:
+        Update a redflag Status
+        """
+
+        response, data, options = (
+            {}, {}, ['draft', 'under investigation', 'resolved', 'rejected',
+                     'Draft', 'Under Investigation', 'Resolved', 'Rejected']
+        )
+
+        try:
+            redflag = self.get_object()
+
+            try:
+                status_data = request.data['status'].strip()
+
+                if status_data.lower() in options:
+
+                    data['status'] = status_data.lower()
+
+                    updated_redflag = (
+                        AdminRedflagSerializer(redflag,
+                                               data=data,
+                                               partial=True,
+                                               context={'request': request}))
+
+                    updated_redflag.is_valid(raise_exception=True)
+
+                    self.perform_update(updated_redflag)
+
+                    response_data = updated_redflag.data
+
+                    response_data['createdBy'] = self.user_name(
+                        updated_redflag.data['createdBy'])
+
+                    response['data'], response['status'] = response_data, 200
+
+                else:
+
+                    response['error'], response['status'] = (
+                        "'status' field may only be either {}".format(
+                            ' or '.join(options[:4])), 400)
+
+            except KeyError:
+
+                response['error'], response['status'] = {
+                    "status": "This field is required."}, 400
+
+        except Http404:
+
+            response['error'], response['status'] = (
+                "Intervention record with ID '{}' does not exist".format(
+                    pk), 404)
+
+        return Response(data=response, status=response['status'])

@@ -10,7 +10,7 @@ class RedflagModel(models.Model):
     incident_type = 'red-flag'
     title = models.CharField(max_length=128)
     location = models.CharField(max_length=150)
-    status = models.CharField(max_length=30, default="draft")
+    status = models.CharField(max_length=30, default='draft')
     Image = models.URLField(blank=True, null=True)
     Video = models.URLField(blank=True, null=True)
     comment = models.TextField(blank=False, null=False)
@@ -21,3 +21,4 @@ class RedflagModel(models.Model):
 
     class Meta:
         ordering = ["-createdOn"]
+
