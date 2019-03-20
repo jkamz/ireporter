@@ -35,7 +35,7 @@ class RedflagView(viewsets.ModelViewSet):
 
     def validate_record(self, request):
         """Checks if redlag record exists """
-        
+
         records = RedflagModel.objects.filter(
             createdBy=request.data['createdBy'])
         duplicate_record = records.filter(
@@ -128,3 +128,33 @@ class RedflagView(viewsets.ModelViewSet):
         return JsonResponse({"status": 200,
                              "data": serializer.data},
                             status=200)
+
+    def update(self, request, **kwargs):
+        """
+        update:
+        update a redflag.
+        """
+        try:
+            instance = self.get_object()
+
+            if int(instance.createdBy) != request.user.id:
+                return JsonResponse({"status": 403,
+                                     "message": "You can not update a redflag you do not own"},
+                                    status=403)
+
+            if instance.status.lower() != 'draft':
+                return JsonResponse({"status": 403,
+                                     "message": "You can not update a redflag that is not a draft"},
+                                    status=403)
+
+            request.data['createdBy'] = request.user.id
+            request.data['status'] = instance.status
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+
+        except Http404:
+            return JsonResponse({"status": 404,
+                                 "message": "Redflag not found"},
+                                status=404)

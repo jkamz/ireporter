@@ -323,3 +323,86 @@ class RedflagCaseTest(TestCase):
 
         self.assertEqual(result['message'], 'Redflag with id 20 not found')
         assert response.status_code == 404, response.content
+
+    def test_can_update_redflag_record(self):
+
+        # first create a redflag
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.draft_status, HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+
+        redflag_data = json.loads(response.content.decode('utf-8'))
+        incident_url = redflag_data['data']['url']
+
+        # update redflag
+        view = RedflagView.as_view({'put': 'update'})
+        update_data = self.incident_data
+        update_data.update({'location': 'New Location'})
+        response = self.client.put(
+            incident_url, update_data, HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
+
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertEqual(result['location'], 'New Location')
+        assert response.status_code == 200, response.content
+
+    def test_only_owner_can_update_redflag(self):
+        # first create a redflag
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.draft_status, HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+
+        redflag_data = json.loads(response.content.decode('utf-8'))
+        incident_url = redflag_data['data']['url']
+
+        # update redflag
+        view = RedflagView.as_view({'put': 'update'})
+        update_data = self.incident_data
+        update_data.update({'location': 'New Location'})
+        response = self.client.put(
+            incident_url, update_data, HTTP_AUTHORIZATION='Bearer ' + self.control_token, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_user_cannot_update_status(self):
+        # first create a redflag
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.draft_status, HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+
+        redflag_data = json.loads(response.content.decode('utf-8'))
+        incident_url = redflag_data['data']['url']
+
+        # update redflag status
+        view = RedflagView.as_view({'put': 'update'})
+        update_data = self.incident_data
+        update_data.update({'status': 'new status'})
+        response = self.client.put(
+            incident_url, update_data, HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
+
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertEqual(result['status'], 'draft')
+        assert response.status_code == 200, response.content
+
+    def test_user_cannot_update_if_not_draft(self):
+        # first create a redflag with a resolved status
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.processed_status, HTTP_AUTHORIZATION='Bearer '
+                                    + self.token, format='json')
+
+        redflag_data = json.loads(response.content.decode('utf-8'))
+        incident_url = redflag_data['data']['url']
+
+        # update redflag
+        view = RedflagView.as_view({'put': 'update'})
+        update_data = self.incident_data
+        update_data.update({'location': 'Nairobi'})
+        response = self.client.put(
+            incident_url, update_data, HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
