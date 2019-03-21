@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from users.models import User
 from incidents.models import RedflagModel
 from incidents.views import RedflagView
@@ -55,7 +56,7 @@ class RedflagCaseTest(TestCase):
         self.incident_data = {
             'title': 'This is the title',
             'status': "pending",
-            'Image': '',
+            'Image': [],
             'Video': '',
             'comment': 'This is the comment',
             'incident_type': 'red-flag',
@@ -65,7 +66,7 @@ class RedflagCaseTest(TestCase):
         self.draft_status = {
             'title': 'This is the draft redflag',
             'status': "draft",
-            'Image': '',
+            'Image': [],
             'Video': '',
             'comment': 'This record has the status set to draft',
             'incident_type': 'red-flag',
@@ -75,7 +76,7 @@ class RedflagCaseTest(TestCase):
         self.processed_status = {
             'title': 'This is the resolved redflag',
             'status': "resolved",
-            'Image': '',
+            'Image': [],
             'Video': '',
             'comment': 'This record has been resolved',
             'incident_type': 'red-flag',
@@ -472,6 +473,106 @@ class RedflagCaseTest(TestCase):
         update_data.update({'location': 'Nairobi'})
         response = self.client.put(
             incident_url, update_data, HTTP_AUTHORIZATION='Bearer ' + self.token, format='json')
+
+    def test_upload_image(self):
+
+        redflag = self.client.post('/api/redflags/', self.draft_status,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+
+        flag_id, flag_image = (
+            redflag.data['data']['id'], redflag.data['data']['Image'])
+
+        image = SimpleUploadedFile(
+            "image1.jpg", b"file_content", content_type="image/jpeg")
+
+        response = self.client.patch(
+            "/api/redflags/{}/addImage/".format(flag_id),
+            data={"image": image},
+            format="multipart",
+            HTTP_AUTHORIZATION='Bearer ' + self.token)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(
+            len(response.data['data']['Image']), len(flag_image) + 1)
+
+        self.assertNotEqual(response.data['data']['Image'], flag_image)
+
+    def test_creates_redflag_with_image_if_present(self):
+
+        image = SimpleUploadedFile(
+            "image2.jpg", b"file_content", content_type="image/jpeg")
+
+        self.draft_status.update({'image': image})
+
+        redflag = self.client.post('/api/redflags/', self.draft_status,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='multipart')
+
+        self.assertEqual(redflag.status_code, status.HTTP_201_CREATED)
+
+        flag_id, flag_image = (
+            redflag.data['data']['id'], redflag.data['data']['Image'])
+
+        self.assertTrue(len(flag_image) >= 1)
+
+    def test_raises_bad_request_if_wrong_image_format(self):
+        image = SimpleUploadedFile(
+            "doc.pdf", b"file_content", content_type="pdf")
+
+        self.draft_status.update({'image': image})
+
+        redflag = self.client.post('/api/redflags/', self.draft_status,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='multipart')
+
+        self.assertEqual(redflag.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_raises_not_found_if_record_missing(self):
+
+        response = self.client.patch(
+            "/api/redflags/1000/addImage/",
+            data={},
+            format="multipart",
+            HTTP_AUTHORIZATION='Bearer ' + self.token)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_raises_bad_request_if_image_key_missing(self):
+
+        redflag = self.client.post('/api/redflags/', self.draft_status,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+
+        flag_id, flag_image = (
+            redflag.data['data']['id'], redflag.data['data']['Image'])
+
+        response = self.client.patch(
+            "/api/redflags/{}/addImage/".format(flag_id),
+            data={},
+            format="multipart",
+            HTTP_AUTHORIZATION='Bearer ' + self.token)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_raises_forbidden_if_not_record_owner(self):
+
+        redflag = self.client.post('/api/redflags/', self.draft_status,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+
+        flag_id, flag_image = (
+            redflag.data['data']['id'], redflag.data['data']['Image'])
+
+        image = SimpleUploadedFile(
+            "image1.jpg", b"file_content", content_type="image/jpeg")
+
+        response = self.client.patch(
+            "/api/redflags/{}/addImage/".format(flag_id),
+            data={"image": image},
+            format="multipart",
+            HTTP_AUTHORIZATION='Bearer ' + self.control_token)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 

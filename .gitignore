@@ -104,3 +104,7 @@ venv.bak/
 */*/__pycache__/
 .vscode/
 
+# media file
+
+media/
+
