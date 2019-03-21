@@ -72,7 +72,7 @@ class InterventionsView(viewsets.ModelViewSet):
 
     def user_name(self, uid):
         user = User.objects.filter(id=uid)[0]
-        print("                   \n"user)
+        print("                   \n"user.username)
         return user.username
 
     def list(self, request):
