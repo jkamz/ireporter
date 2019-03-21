@@ -547,6 +547,7 @@ class InterventionsTestsCase(TestCase):
                                            format='json')
         self.assertEqual(self.response.status_code,
                          status.HTTP_403_FORBIDDEN)
+
     def test_update_an_intervention(self):
         """
         Test that a user can successfully update
@@ -571,6 +572,28 @@ class InterventionsTestsCase(TestCase):
 
         self.assertEqual(result['data']['title'], 'Another title')
         assert response.status_code == 200, response.content
+
+    def test_update_an_inexistent_intervention(self):
+        """
+        Test when user tries update inexistent record
+        """
+        view = InterventionsView.as_view({'post': 'create'})
+        response = self.client.post('/api/interventions/',
+                                    self.intervention_data,
+                                    HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        flag_details = json.loads(response.content.decode('utf-8'))
+        flag_url = "/api/interventions/675765/"
+
+        view = InterventionsView.as_view({'put': 'update'})
+        data = self.intervention_data
+        data.update({'title': 'Another title'})
+        response = self.client.put(flag_url,
+                                   data,
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+
+        assert response.status_code == 404, response.content
 
     def test_only_owner_can_update_an_intervention(self):
         """
@@ -677,3 +700,20 @@ class InterventionsTestsCase(TestCase):
             'You cannot edit the intervention since its status is: resolved')
         assert response.status_code == 403
 
+    def test_throws_error_on_duplicate_comment_by_same_user(self):
+        """test there an error on duplicate comment by same user"""
+
+        self.client.post('/api/interventions/',
+                         self.intervention_data, HTTP_AUTHORIZATION='Bearer ' +
+                         self.token,
+                         format='json')
+
+        updated_data = self.intervention_data
+        updated_data.update({'title': 'New title for a record'})
+        self.response = self.client.post('/api/interventions/',
+                                         self.intervention_data,
+                                         HTTP_AUTHORIZATION='Bearer ' +
+                                         self.token,
+                                         format='json')
+
+        self.assertEqual(self.response.status_code, status.HTTP_409_CONFLICT)

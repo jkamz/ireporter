@@ -132,8 +132,6 @@ class RedflagCaseTest(TestCase):
             format="json"
         )
 
-        # print(json.loads(self.login_control.content))
-
         self.control_token = self.login_control.data['token']
 
     def signup_user_and_fetch_details(self, data=''):

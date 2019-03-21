@@ -15,6 +15,10 @@ from rest_framework.permissions import (
 )
 from django.http import JsonResponse
 from django.http.response import Http404
+import smtplib
+from django.conf import settings
+from incidents.views import send_email
+record_type = "Intervention"
 
 
 class InterventionsView(viewsets.ModelViewSet):
@@ -113,8 +117,6 @@ class InterventionsView(viewsets.ModelViewSet):
 
     @action(methods=['patch'], detail=True, permission_classes=[IsAdminUser],
             url_path='status', url_name='change_status')
-
-
     def update_status(self, request, pk=None):
         """
         patch:
@@ -154,7 +156,11 @@ class InterventionsView(viewsets.ModelViewSet):
                     response_data['createdBy'] = self.user_name(
                         updated_intervention.data['createdBy'])
 
-                    response['data'], response['status'] = response_data, 200
+                    send_email(response_data['createdBy'],
+                               status_data, response_data,
+                               updated_intervention,
+                               response, record_type
+                               )
 
                 else:
 
@@ -244,5 +250,6 @@ class InterventionsView(viewsets.ModelViewSet):
         return JsonResponse(
             {"status": 403,
              "message":
-             "You cannot edit the intervention since its status is: {}".format(intervention.status)},
+             ("You cannot edit the intervention since its "
+              "status is: {}".format(intervention.status))},
             status=403)

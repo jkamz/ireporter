@@ -14,6 +14,51 @@ from django.core.files.storage import FileSystemStorage
 import json
 
 from django.http.response import Http404
+import smtplib
+from django.conf import settings
+
+record_type = "Red-Flag"
+
+
+def send_email(creator_name, new_status, response_data, updated_redflag, response, record_type):
+    """
+    This tries to send an email to the owner
+    of an intervention record when admin changes the status
+    """
+    response_data['createdBy'] = RedflagView.user_name(uid=updated_redflag.data['createdBy'])
+
+    creator_email = RedflagView.user_email(
+        updated_redflag.data['createdBy'])
+
+    FROM = settings.EMAIL_HOST_USER
+    TO = [creator_email]
+    SUBJECT = "iReporter {} Record Status change".format(record_type)
+    MESSAGE = ("Hello {},\n\nYour {} record is "
+                "now {}\n\nThank you for using our services.\n"
+                "\nThe Ireporter Team"
+                .format(creator_name, record_type, new_status))
+
+    try:
+        server = smtplib.SMTP(
+            settings.EMAIL_HOST, settings.EMAIL_PORT)
+        server.starttls()
+        server.login(
+            FROM, settings.EMAIL_HOST_PASSWORD)
+        msg = """From: %s\nTo: %s\nSubject: %s\n\n%s
+                """ % (FROM, ", ".join(TO), SUBJECT, MESSAGE)
+        server.sendmail(FROM, TO, msg)
+        server.quit()
+
+    except:
+        response_data['message'] = (
+            "status set to {}; could not send email to the "
+            "user".format(new_status))
+
+        response['data'], response['status'] = response_data, 200
+
+        return Response(data=response, status=response['status'])
+
+    response['data'], response['status'] = response_data, 200
 
 
 class RedflagView(viewsets.ModelViewSet):
@@ -130,7 +175,8 @@ class RedflagView(viewsets.ModelViewSet):
 
         return Response(data=response, status=response['status'])
 
-    def user_name(self, uid):
+    @staticmethod
+    def user_name(uid):
         user = User.objects.filter(id=uid)[0]
         return user.username
 
@@ -146,7 +192,7 @@ class RedflagView(viewsets.ModelViewSet):
         data = []
         for redflag in serializer.data:
             dictionary = dict(redflag)
-            dictionary['createdBy'] = self.user_name(dictionary['createdBy'])
+            dictionary['createdBy'] = RedflagView.user_name(dictionary['createdBy'])
             data.append(dictionary)
 
         return JsonResponse({"status": 200,
@@ -240,7 +286,7 @@ class RedflagView(viewsets.ModelViewSet):
                     response_data['createdBy'] = self.user_name(
                         updated_redflag.data['createdBy'])
 
-                    response['data'], response['status'] = response_data, 200
+                    send_email(response_data['createdBy'], status_data, response_data, updated_redflag, response, record_type)
 
                 else:
 
@@ -326,3 +372,8 @@ class RedflagView(viewsets.ModelViewSet):
             )
 
         return Response(data=response, status=response['status'])
+
+    @staticmethod
+    def user_email(uid):
+        user = User.objects.filter(id=uid)[0]
+        return user.email
