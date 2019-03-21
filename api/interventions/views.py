@@ -72,6 +72,7 @@ class InterventionsView(viewsets.ModelViewSet):
 
     def user_name(self, uid):
         user = User.objects.filter(id=uid)[0]
+        print(user)
         return user.username
 
     def list(self, request):
@@ -249,7 +250,7 @@ class InterventionsView(viewsets.ModelViewSet):
             status=403)
 
     def upload_image(self, request, pk=None, *args, **kwargs):
-        
+
         file_exists = request.FILES.get('file', False)
         id_exists = request.data.get('id', False)
 
