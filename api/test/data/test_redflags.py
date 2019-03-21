@@ -8,6 +8,8 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from django.urls import reverse
 import json
+import random
+import string
 
 
 class RedflagCaseTest(TestCase):
@@ -350,7 +352,62 @@ class RedflagCaseTest(TestCase):
                                    format='json')
         result = json.loads(response.content.decode('utf-8'))
 
-        self.assertTrue(result['data'])
+        self.assertTrue(result['results'])
+        assert response.status_code == 200, response.content
+
+    def test_get_all_redlfags_pagination(self):
+        """
+        Test that redflag records are displayed in pages
+        """
+        view = RedflagView.as_view({'post': 'create'})
+        letters = string.ascii_letters
+        i = 0
+        for i in range(20):
+            self.client.post('/api/redflags/',
+                            self.incident_data,
+                            HTTP_AUTHORIZATION='Bearer ' + self.token,
+                            format='json')
+            self.incident_data.update({'title': ''.join(random.choice(letters))})
+            i = i+1
+        view = RedflagView.as_view({'get': 'list'})
+        response = self.client.get('/api/redflags/?page=1',
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertTrue(len(result['results']), 10)
+        self.assertTrue(result['count'], 19)
+        assert response.status_code == 200, response.content
+
+    def test_page_limit_redlfags_pagination(self):
+        """
+        Test when page limit is set,
+        the page results are limited to the number set
+        """
+        view = RedflagView.as_view({'post': 'create'})
+        self.client.post('/api/redflags/',
+                         self.incident_data,
+                         HTTP_AUTHORIZATION='Bearer ' + self.token,
+                         format='json')
+        self.incident_data.update({'title': 'Second redflag'})
+        self.client.post('/api/redflags/',
+                         self.incident_data,
+                         HTTP_AUTHORIZATION='Bearer ' + self.token,
+                         format='json')
+        self.incident_data.update({'title': 'Third redflag'})
+        self.client.post('/api/redflags/',
+                         self.incident_data,
+                         HTTP_AUTHORIZATION='Bearer ' + self.token,
+                         format='json')
+
+        view = RedflagView.as_view({'get': 'list'})
+        response = self.client.get('/api/redflags/?limit=2',
+                                   HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                   format='json')
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertEqual(result['count'], 3)
+        self.assertEqual(len(result['results']), 2)
         assert response.status_code == 200, response.content
 
     def test_get_one_redlfag(self):
