@@ -17,6 +17,7 @@ from django.utils.translation import gettext_lazy as _
 import os
 from datetime import timedelta
 import datetime
+import cloudinary
 
 # Project Base Paths
 # project_root/api/config/settings.py - 3 = project_root/
@@ -79,6 +80,7 @@ INSTALLED_APPS = [
     'rest_framework_swagger',
     'incidents',
     'interventions',
+    'cloudinary',
 ]
 
 # Rest Framework Settings
@@ -476,3 +478,22 @@ SWAGGER_SETTINGS = {
 }
 
 django_heroku.settings(locals())
+
+# Cloudinary settings for Django. Add to your settings file.
+
+CLOUDINARY_NAME = env.str('CLOUDINARY_CLOUD_NAME')
+CLOUDINARY_API_KEY = env.str('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET = env.str('CLOUDINARY_API_SECRET')
+
+CLOUDINARY = {
+  'cloud_name': CLOUDINARY_NAME,
+  'api_key': CLOUDINARY_API_KEY, 
+  'api_secret': CLOUDINARY_API_SECRET,  
+}
+
+# Cloudinary settings. Run before pycloudinary is used.
+cloudinary.config(
+  cloud_name = CLOUDINARY_NAME,
+  api_key = CLOUDINARY_API_KEY,   
+  api_secret = CLOUDINARY_API_SECRET,    
+)
