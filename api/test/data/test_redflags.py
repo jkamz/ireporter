@@ -11,6 +11,10 @@ import json
 import random
 import string
 
+from share_utility.share import facebook_share_url, twitter_share_url, linkedin_share_url, mail_share_url
+from django.http import HttpRequest
+
+
 
 class RedflagCaseTest(TestCase):
 
@@ -721,3 +725,75 @@ class RedflagCaseTest(TestCase):
 
         self.assertEqual(redflag_update.status_code,
                          status.HTTP_400_BAD_REQUEST)
+
+    def test_returns_social_login_urls(self):
+        """
+        Checks if redflag social share urls are returned
+        """
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data, HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+
+        result = json.loads(response.content.decode('utf-8'))
+
+        self.assertTrue(result['data']['twitter'])
+        self.assertTrue(result['data']['facebook'])
+        self.assertTrue(result['data']['linkedIn'])
+        self.assertTrue(result['data']['mail'])
+
+    def test_twitter_url(self):
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data, HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+
+        result = json.loads(response.content.decode('utf-8'))
+
+        request = HttpRequest()
+        request.data = self.incident_data
+        request.data['url'] = result['data']['url']
+        
+        self.assertTrue(twitter_share_url(request))
+
+    def test_facebook_url(self):
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data, HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        
+        result = json.loads(response.content.decode('utf-8'))
+
+        request = HttpRequest()
+        request.data = self.incident_data
+        request.data['url'] = result['data']['url']
+
+        self.assertTrue(facebook_share_url(request))
+
+    def test_linkedin_url(self):
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data, HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        
+        result = json.loads(response.content.decode('utf-8'))
+
+        request = HttpRequest()
+        request.data = self.incident_data
+        request.data['url'] = result['data']['url']
+
+        self.assertTrue(linkedin_share_url(request))
+
+    def test_mail_url(self):
+        view = RedflagView.as_view({'post': 'create'})
+        response = self.client.post('/api/redflags/',
+                                    self.incident_data, HTTP_AUTHORIZATION='Bearer ' + self.token,
+                                    format='json')
+        
+        result = json.loads(response.content.decode('utf-8'))
+
+        request = HttpRequest()
+        request.data = self.incident_data
+        request.data['url'] = result['data']['url']
+
+        self.assertTrue(mail_share_url(request))

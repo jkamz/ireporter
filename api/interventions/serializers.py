@@ -25,9 +25,13 @@ class InterventionSerializer(serializers.ModelSerializer):
             'Image',
             'Video',
             'comment',
-            'createdOn')
+            'createdOn',
+            'twitter',
+            'facebook',
+            'linkedIn',
+            'mail')
 
-        read_only_fields = ['status',]
+        read_only_fields = ['status', 'twitter', 'facebook', 'linkedIn', 'mail']
 
     def create(self, validated_data):
         intervention = TABLE.objects.create(**validated_data)

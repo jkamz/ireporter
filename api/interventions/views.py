@@ -22,7 +22,7 @@ record_type = "Intervention"
 from file_utility.uploader import ImageUploader
 from django.contrib.postgres.fields import ArrayField
 import json
-
+from share_utility.share import facebook_share_url, twitter_share_url, linkedin_share_url, mail_share_url
 
 class InterventionsView(viewsets.ModelViewSet):
     """
@@ -84,8 +84,8 @@ class InterventionsView(viewsets.ModelViewSet):
                                             context={'request': request})
         dictionary = None
         data = []
-        for redflag in serializer.data:
-            dictionary = dict(redflag)
+        for intervention in serializer.data:
+            dictionary = dict(intervention)
             dictionary['createdBy'] = self.user_name(dictionary['createdBy'])
             data.append(dictionary)
 
@@ -253,7 +253,7 @@ class InterventionsView(viewsets.ModelViewSet):
         file_exists = request.FILES.get('file', False)
         id_exists = request.data.get('id', False)
 
-        status = 0
+        self.status = 0
         if request.method == 'POST':
             status = 201
         else:
@@ -306,17 +306,37 @@ class InterventionsView(viewsets.ModelViewSet):
                 if file_exists:
                         response = super().create(request)
                         request.data['id'] = response.data['id']
+                        intervention = InterventionsModel.objects.filter(id=int(response.data['id']))[0]
+                        self.add_social_login(request, intervention)
                         return self.upload_image(request)
                 else:
                     response = super().create(request)
-                    response.data = {
-                        'status': status,
-                        'data': response.data,
-                    }
-                    return response
+                    intervention = InterventionsModel.objects.filter(id=int(response.data['id']))[0]
+                    return self.add_social_login(request, intervention)
+                    
         except Exception as e:
             return JsonResponse(
                 {"status" : e.status_code,
                     "error": e.__dict__},
                 status = e.status_code,
                 safe = False)
+
+    def add_social_login(self, request, intervention):
+        serializer = InterventionSerializer(intervention,
+                                        data=request.data,
+                                        context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        request.data['url'] = serializer.data['url']
+        request.data['incident_type'] = 'intervention'
+        serializer = InterventionSerializer(intervention,
+                                        data=request.data,
+                                        context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.validated_data['twitter'] = twitter_share_url(request)
+        serializer.validated_data['facebook'] = facebook_share_url(request)
+        serializer.validated_data['linkedIn'] = linkedin_share_url(request)
+        serializer.validated_data['mail'] = mail_share_url(request)
+        serializer.save()
+        return Response({"status" : 201,
+                                    "data": serializer.data},
+                                    status=201)

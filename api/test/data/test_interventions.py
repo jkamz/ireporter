@@ -10,7 +10,8 @@ import json
 from file_utility.uploader import ImageUploader
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
-
+from share_utility.share import facebook_share_url, twitter_share_url, linkedin_share_url, mail_share_url
+from django.http import HttpRequest
 
 class InterventionsTestsCase(TestCase):
 
@@ -97,7 +98,8 @@ class InterventionsTestsCase(TestCase):
             'comment': 'Sample intervention comment',
             'location': '24.00, 45.006',
             'Image': [],
-            'Video': ''
+            'Video': '',
+            'incident_type': 'intervention'
         }
 
         self.control_intervention_data = {
@@ -105,7 +107,8 @@ class InterventionsTestsCase(TestCase):
             'comment': 'Sample control comment',
             'location': '84.00, 124.00',
             'Image': [],
-            'Video': ''
+            'Video': '',
+            'incident_type': 'intervention'
         }
 
         self.draft_status = {
@@ -138,7 +141,8 @@ class InterventionsTestsCase(TestCase):
             'location': '24.00, 45.006',
             'Image': [],
             'Video': '',
-            'status': 'rejected'
+            'status': 'rejected',
+            'incident_type': 'intervention'
         }
 
         self.token = self.activate_account_and_login()
@@ -782,3 +786,86 @@ class InterventionsTestsCase(TestCase):
             HTTP_AUTHORIZATION='Bearer ' + self.token)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_returns_social_login_urls(self):
+        """
+        Checks if intervention social share urls are returned
+        """
+
+        self.response = self.client.post('/api/interventions/',
+                                         self.intervention_data,
+                                         HTTP_AUTHORIZATION='Bearer ' +
+                                         self.token,
+                                         format='json')
+
+        result = json.loads(self.response.content.decode('utf-8'))
+
+        self.assertTrue(result['data']['twitter'])
+        self.assertTrue(result['data']['facebook'])
+        self.assertTrue(result['data']['linkedIn'])
+        self.assertTrue(result['data']['mail'])
+
+    def test_twitter_url(self):
+        self.response = self.client.post('/api/interventions/',
+                                         self.intervention_data,
+                                         HTTP_AUTHORIZATION='Bearer ' +
+                                         self.token,
+                                         format='json')
+
+        
+        result = json.loads(self.response.content.decode('utf-8'))
+
+        request = HttpRequest()
+        request.data = self.intervention_data
+        request.data['url'] = result['data']['url']
+        
+        self.assertTrue(twitter_share_url(request))
+
+    def test_facebook_url(self):
+        self.response = self.client.post('/api/interventions/',
+                                        self.intervention_data,
+                                        HTTP_AUTHORIZATION='Bearer ' +
+                                        self.token,
+                                        format='json')
+
+        
+        result = json.loads(self.response.content.decode('utf-8'))
+
+        request = HttpRequest()
+        request.data = self.intervention_data
+        request.data['url'] = result['data']['url']
+
+        self.assertTrue(facebook_share_url(request))
+
+    def test_linkedin_url(self):
+        self.response = self.client.post('/api/interventions/',
+                                         self.intervention_data,
+                                         HTTP_AUTHORIZATION='Bearer ' +
+                                         self.token,
+                                         format='json')
+
+        
+        result = json.loads(self.response.content.decode('utf-8'))
+
+        request = HttpRequest()
+        request.data = self.intervention_data
+        request.data['url'] = result['data']['url']
+
+        self.assertTrue(linkedin_share_url(request))
+
+    def test_mail_url(self):
+        self.response = self.client.post('/api/interventions/',
+                                         self.intervention_data,
+                                         HTTP_AUTHORIZATION='Bearer ' +
+                                         self.token,
+                                         format='json')
+
+        
+        result = json.loads(self.response.content.decode('utf-8'))
+
+        request = HttpRequest()
+        request.data = self.intervention_data
+        request.data['url'] = result['data']['url']
+
+        self.assertTrue(mail_share_url(request))
+

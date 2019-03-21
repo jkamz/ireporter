@@ -19,6 +19,10 @@ class RedflagModel(models.Model):
     Video = models.URLField(blank=True, null=True)
     comment = models.TextField(blank=False, null=False)
     createdOn = models.DateTimeField(auto_now_add=True, editable=False)
+    twitter = models.URLField(blank=True, null=True)
+    facebook = models.URLField(blank=True, null=True)
+    linkedIn= models.URLField(blank=True, null=True)
+    mail = models.TextField(blank=False, null=False, default="")
 
     def __str__(self):
         return "{}".format(self.title)
