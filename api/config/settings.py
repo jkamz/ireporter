@@ -81,6 +81,9 @@ INSTALLED_APPS = [
     'incidents',
     'interventions',
     'cloudinary',
+    'oauth2_provider',
+    'social_django',
+    'rest_framework_social_oauth2',
 ]
 
 # Rest Framework Settings
@@ -91,6 +94,10 @@ REST_FRAMEWORK = {
     ('rest_framework.permissions.IsAuthenticated', ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'social_core.backends.facebook.FacebookAppOAuth2',
+        'social_core.backends.facebook.FacebookOAuth2',
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+        'rest_framework_social_oauth2.authentication.SocialAuthentication',
     ),
     'DEFAULT_THROTTLE_CLASSES': (
         'rest_framework.throttling.AnonRateThrottle',
@@ -113,6 +120,35 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER':
     'config.exceptions.api_exception_handler',
 }
+
+# Facebook configuration
+SOCIAL_AUTH_FACEBOOK_KEY = env.int('FACEBOOK_APP_ID')
+SOCIAL_AUTH_FACEBOOK_SECRET = env.str('FACEBOOK_SECRET_KEY')
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
+
+# Define SOCIAL_AUTH_FACEBOOK_SCOPE to get extra permissions from facebook. Email is not sent by default, to get it, you must request the email permission:
+SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
+SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
+    'fields': 'id, name, email'
+}
+
+SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
+FACEBOOK_EXTENDED_PERMISSIONS = ['email']
+SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['username', 'first_name', 'email']
+SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
+
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.social_auth.associate_by_email',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
 
 JWT_AUTH = {
     'JWT_ENCODE_HANDLER':
@@ -177,6 +213,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
 # Root url config entry point
@@ -200,6 +237,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_settings_export.settings_export',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -265,17 +304,21 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
+    'social_core.backends.facebook.FacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',
+    'rest_framework_social_oauth2.backends.DjangoOAuth2',
 ]
 
 REST_AUTH_SERIALIZERS = {
     'USER_DETAILS_SERIALIZER': 'users.User',
 }
+DRFSO2_PROPRIETARY_BACKEND_NAME = 'Facebook'
+DRFSO2_URL_NAMESPACE = ''
 
 # Sites Framework
 # https://docs.djangoproject.com/en/2.0/ref/settings/#std:setting-SITE_ID
 
-SITE_ID = 1
+SITE_ID = 2
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/

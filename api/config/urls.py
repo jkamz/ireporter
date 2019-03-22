@@ -52,7 +52,8 @@ urlpatterns = [
     path('api/browser/', api_browser_urls),
     path('api/admin/', admin.site.urls),
     path('api/', incident_urls),
-    path('api/', interventions_url)
+    path('api/', interventions_url),
+    path('api/auth/oauth/', include('rest_framework_social_oauth2.urls')),
 ]
 
 urlpatterns += router.urls
