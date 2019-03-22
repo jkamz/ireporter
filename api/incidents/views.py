@@ -17,6 +17,7 @@ import json
 from django.http.response import Http404
 import smtplib
 from django.conf import settings
+from share_utility.share import facebook_share_url, twitter_share_url, linkedin_share_url, mail_share_url
 
 record_type = "Red-Flag"
 
@@ -138,11 +139,25 @@ class RedflagView(viewsets.ModelViewSet):
 
     def create_redflag_record(self, request):
         response = super().create(request)
-        response.data = {
-            'status': 201,
-            'data': response.data,
-        }
-        return response
+        redflag = RedflagModel.objects.filter(id=int(response.data['id']))[0]
+        serializer = IncidentSerializer(redflag,
+                                        data=request.data,
+                                        context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        request.data['url'] = serializer.data['url']
+        request.data['incident_type'] = 'red-flag'
+        serializer = IncidentSerializer(redflag,
+                                        data=request.data,
+                                        context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.validated_data['twitter'] = twitter_share_url(request)
+        serializer.validated_data['facebook'] = facebook_share_url(request)
+        serializer.validated_data['linkedIn'] = linkedin_share_url(request)
+        serializer.validated_data['mail'] = mail_share_url(request)
+        serializer.save()
+        return Response({"status" : 201,
+            "data": serializer.data},
+            status=201)
 
     def create(self, request):
         request.POST._mutable = True
