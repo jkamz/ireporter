@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'incidents',
     'interventions',
     'cloudinary',
+    'corsheaders',
 ]
 
 # Rest Framework Settings
@@ -169,6 +170,7 @@ DJOSER = {
 # https://docs.djangoproject.com/en/2.0/topics/http/middleware/
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -179,6 +181,15 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',
 ]
 
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = (
+    'localhost:3030',
+)
+CORS_ORIGIN_REGEX_WHITELIST = (
+    'localhost:3030',
+)
 # Root url config entry point
 # https://docs.djangoproject.com/en/2.0/ref/settings/#root-urlconf
 
@@ -487,13 +498,13 @@ CLOUDINARY_API_SECRET = env.str('CLOUDINARY_API_SECRET')
 
 CLOUDINARY = {
   'cloud_name': CLOUDINARY_NAME,
-  'api_key': CLOUDINARY_API_KEY, 
-  'api_secret': CLOUDINARY_API_SECRET,  
+  'api_key': CLOUDINARY_API_KEY,
+  'api_secret': CLOUDINARY_API_SECRET,
 }
 
 # Cloudinary settings. Run before pycloudinary is used.
 cloudinary.config(
   cloud_name = CLOUDINARY_NAME,
-  api_key = CLOUDINARY_API_KEY,   
-  api_secret = CLOUDINARY_API_SECRET,    
+  api_key = CLOUDINARY_API_KEY,
+  api_secret = CLOUDINARY_API_SECRET,
 )
